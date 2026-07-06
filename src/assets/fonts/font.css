@@ -1,0 +1,47 @@
+/* Lexend Deca — matches Massaed app font stack */
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700&display=swap');
+
+@font-face {
+  font-family: LexendDeca;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: local('Lexend Deca Light'), url('https://fonts.gstatic.com/s/lexenddeca/v21/8vIS7wA0nzjyDCxtnkffgUP9.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: LexendDeca;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lexend Deca Regular'), url('https://fonts.gstatic.com/s/lexenddeca/v21/8vIJ7wA0nzjyDCxtnkffgUP9.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: LexendDeca;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('Lexend Deca Medium'), url('https://fonts.gstatic.com/s/lexenddeca/v21/8vIN7wA0nzjyDCxtnkffgUP9.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: LexendDeca;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lexend Deca SemiBold'), url('https://fonts.gstatic.com/s/lexenddeca/v21/8vIM7wA0nzjyDCxtnkffgUP9.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: LexendDeca;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lexend Deca Bold'), url('https://fonts.gstatic.com/s/lexenddeca/v21/8vIL7wA0nzjyDCxtnkffgUP9.woff2')
+    format('woff2');
+}
