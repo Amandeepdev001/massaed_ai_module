@@ -55,16 +55,16 @@ export function MessageMarkdown({ content }: { content: string }) {
 }
 
 function isListHeader(header: string) {
-  const headerLower = header.toLowerCase()
-  return headerLower.includes('client') || headerLower.includes('member')
+  const headerLower = header.toLowerCase().trim()
+  return headerLower === 'clients' || headerLower.endsWith(' clients')
 }
 
 function getColumnClass(header: string, cellValue = '') {
-  const headerLower = header.toLowerCase()
-
-  if (parseListItems(cellValue, header) || (isListHeader(header) && !cellValue)) {
-    return 'message-markdown__grow-col message-markdown__list-col'
+  if (parseListItems(cellValue, header) || isListHeader(header)) {
+    return 'message-markdown__wrap-col'
   }
+
+  const headerLower = header.toLowerCase()
 
   if (
     headerLower.includes('description') ||
@@ -72,12 +72,12 @@ function getColumnClass(header: string, cellValue = '') {
     headerLower.includes('remark') ||
     headerLower.includes('comment') ||
     headerLower.includes('note') ||
-    cellValue.length > 80
+    cellValue.length > 60
   ) {
-    return 'message-markdown__grow-col message-markdown__description-col'
+    return 'message-markdown__wrap-col'
   }
 
-  return 'message-markdown__shrink-col'
+  return 'message-markdown__compact-col'
 }
 
 function parseListItems(value: string, header: string): string[] | null {
@@ -85,7 +85,8 @@ function parseListItems(value: string, header: string): string[] | null {
 
   const headerLower = header.toLowerCase()
   const isListColumn =
-    headerLower.includes('client') ||
+    headerLower === 'clients' ||
+    headerLower.endsWith(' clients') ||
     headerLower.includes('member') ||
     headerLower.includes('technician')
 

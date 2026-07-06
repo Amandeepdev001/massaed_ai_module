@@ -568,59 +568,24 @@
 }
 
 .message-markdown__table-wrap {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
   overflow: auto;
   max-height: 360px;
-  width: 100%;
-  max-width: 100%;
   border-radius: 8px;
   border: 1px solid var(--ai-border);
 }
 
-/* Shared thin scrollbar — tables + inner chip lists */
-.table-scrollbar {
-  scrollbar-gutter: stable;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: var(--pb-bg-en-1) transparent;
-}
-
-.table-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-  background: transparent;
-}
-
-.table-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 2px;
-}
-
-.table-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(var(--pb-bg-en-1), var(--button-bg-2));
-  border: none;
-  border-radius: 999px;
-}
-
-.table-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(var(--pb-bg-en-1), var(--button-bg-2));
-}
-
-.table-scrollbar::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
 .message-markdown__table {
-  width: max-content;
-  min-width: 100%;
+  width: auto;
   border-collapse: collapse;
   font-size: 0.8125rem;
   table-layout: auto;
 }
 
 .message-markdown__index-col {
-  width: 44px;
-  min-width: 44px;
-  max-width: 44px;
+  width: 36px;
   padding: 8px 6px !important;
   text-align: center !important;
   color: var(--gray-46);
@@ -644,25 +609,40 @@
   vertical-align: top;
 }
 
-.message-markdown__shrink-col {
-  width: 1%;
+.message-markdown__compact-col {
   white-space: nowrap;
 }
 
-.message-markdown__grow-col {
-  width: auto;
+.message-markdown__wrap-col {
   white-space: normal;
   word-break: break-word;
+  max-width: 320px;
+  min-width: 160px;
+  line-height: 1.45;
 }
 
-.message-markdown__list-col {
-  min-width: 260px;
+/* Shared thin scrollbar — tables */
+.table-scrollbar {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pb-bg-en-1) transparent;
 }
 
-.message-markdown__description-col {
-  min-width: 180px;
-  max-width: 520px;
-  line-height: 1.5;
+.table-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  background: transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--pb-bg-en-1), var(--button-bg-2));
+  border: none;
+  border-radius: 999px;
 }
 
 .message-markdown__chip-list {
@@ -682,6 +662,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-width: 300px;
   padding: 2px 0;
 }
 
@@ -719,13 +700,13 @@
 
 .message-bot__body:has(.message-markdown__table-wrap) {
   padding-right: 0;
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
 }
 
 .message-bubble--text:has(.message-markdown__table-wrap) {
   max-width: 100%;
-  width: 100%;
+  width: fit-content;
   padding: 12px;
 }
 
@@ -885,7 +866,7 @@
 
 .message-bubble:has(.message-markdown__table-wrap) {
   max-width: 100%;
-  width: 100%;
+  width: fit-content;
 }
 
 .message-bubble--text {
