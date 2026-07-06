@@ -54,11 +54,16 @@ export function MessageMarkdown({ content }: { content: string }) {
   )
 }
 
+function isListHeader(header: string) {
+  const headerLower = header.toLowerCase()
+  return headerLower.includes('client') || headerLower.includes('member')
+}
+
 function getColumnClass(header: string, cellValue = '') {
   const headerLower = header.toLowerCase()
 
-  if (parseListItems(cellValue, header)) {
-    return 'message-markdown__list-col'
+  if (parseListItems(cellValue, header) || (isListHeader(header) && !cellValue)) {
+    return 'message-markdown__grow-col message-markdown__list-col'
   }
 
   if (
@@ -66,20 +71,13 @@ function getColumnClass(header: string, cellValue = '') {
     headerLower.includes('detail') ||
     headerLower.includes('remark') ||
     headerLower.includes('comment') ||
-    headerLower.includes('note')
-  ) {
-    return 'message-markdown__description-col'
-  }
-
-  if (
-    headerLower.includes('client') ||
-    headerLower.includes('membership') ||
+    headerLower.includes('note') ||
     cellValue.length > 80
   ) {
-    return 'message-markdown__wide-col'
+    return 'message-markdown__grow-col message-markdown__description-col'
   }
 
-  return ''
+  return 'message-markdown__shrink-col'
 }
 
 function parseListItems(value: string, header: string): string[] | null {
@@ -89,8 +87,7 @@ function parseListItems(value: string, header: string): string[] | null {
   const isListColumn =
     headerLower.includes('client') ||
     headerLower.includes('member') ||
-    headerLower.includes('technician') ||
-    headerLower.includes('name')
+    headerLower.includes('technician')
 
   const items = value
     .split(',')
@@ -108,7 +105,7 @@ function renderCellContent(value: string, header: string) {
 
   if (items) {
     return (
-      <div className="message-markdown__chip-list custom-scrollbar">
+      <div className="message-markdown__chip-list">
         <p className="message-markdown__chip-count">{items.length} items</p>
         <div className="message-markdown__chips">
           {items.map((item, index) => (

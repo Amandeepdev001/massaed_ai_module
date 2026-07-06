@@ -569,17 +569,19 @@
 
 .message-markdown__table-wrap {
   overflow: auto;
-  max-height: 320px;
+  max-height: 360px;
+  width: 100%;
   max-width: 100%;
-  width: fit-content;
   border-radius: 8px;
   border: 1px solid var(--ai-border);
 }
 
-/* Thin scrollbars for tables — same style as main chat scroller */
+/* Shared thin scrollbar — tables + inner chip lists */
 .table-scrollbar {
   scrollbar-gutter: stable;
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pb-bg-en-1) transparent;
 }
 
 .table-scrollbar::-webkit-scrollbar {
@@ -603,9 +605,13 @@
   background: linear-gradient(var(--pb-bg-en-1), var(--button-bg-2));
 }
 
+.table-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .message-markdown__table {
-  width: auto;
-  min-width: 0;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 0.8125rem;
   table-layout: auto;
@@ -636,25 +642,26 @@
   border-bottom: 1px solid var(--ai-border);
   text-align: left;
   vertical-align: top;
-  white-space: normal;
-  word-break: break-word;
-  max-width: 180px;
 }
 
-.message-markdown__wide-col {
-  min-width: 140px;
-  max-width: 220px;
+.message-markdown__shrink-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.message-markdown__grow-col {
+  width: auto;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .message-markdown__list-col {
-  min-width: min(100%, 420px);
-  max-width: 520px;
-  padding: 10px 12px !important;
+  min-width: 260px;
 }
 
 .message-markdown__description-col {
-  min-width: 220px;
-  max-width: 380px;
+  min-width: 180px;
+  max-width: 520px;
   line-height: 1.5;
 }
 
@@ -675,9 +682,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  max-height: 240px;
-  overflow-y: auto;
-  padding-right: 4px;
+  padding: 2px 0;
 }
 
 .message-markdown__chip {
@@ -713,14 +718,14 @@
 }
 
 .message-bot__body:has(.message-markdown__table-wrap) {
-  padding-right: 8px;
+  padding-right: 0;
+  width: 100%;
   max-width: 100%;
 }
 
 .message-bubble--text:has(.message-markdown__table-wrap) {
-  max-width: min(100%, 920px);
-  width: fit-content;
-  min-width: 0;
+  max-width: 100%;
+  width: 100%;
   padding: 12px;
 }
 
@@ -879,8 +884,8 @@
 }
 
 .message-bubble:has(.message-markdown__table-wrap) {
-  max-width: min(100%, 920px);
-  width: fit-content;
+  max-width: 100%;
+  width: 100%;
 }
 
 .message-bubble--text {
