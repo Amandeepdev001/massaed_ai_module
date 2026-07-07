@@ -16,6 +16,22 @@ export function MessageMarkdown({ content }: { content: string }) {
           )
         }
 
+        const keepIndices = block.headers
+          .map((_header, idx) => {
+            const columnValues = block.rows.map((row) => row[idx] || '')
+            const nonEmptyValues = columnValues.map((val) => val.trim()).filter(Boolean)
+
+            if (nonEmptyValues.length > 0 && nonEmptyValues.every((val) => isDbId(val))) {
+              return null
+            }
+
+            return idx
+          })
+          .filter((idx): idx is number => idx !== null)
+
+        const filteredHeaders = keepIndices.map((idx) => block.headers[idx])
+        const filteredRows = block.rows.map((row) => keepIndices.map((idx) => row[idx]))
+
         return (
           <div key={index} className={`${styles['message-markdown__table-wrap']} ${styles['table-scrollbar']}`}>
             <table className={styles['message-markdown__table']}>
@@ -24,7 +40,7 @@ export function MessageMarkdown({ content }: { content: string }) {
                   <th className={styles['message-markdown__index-col']} scope="col">
                     #
                   </th>
-                  {block.headers.map((header, cellIndex) => (
+                  {filteredHeaders.map((header, cellIndex) => (
                     <th key={cellIndex} scope="col" className={getColumnClass(styles, header)}>
                       {renderInlineMarkdown(header)}
                     </th>
@@ -32,11 +48,11 @@ export function MessageMarkdown({ content }: { content: string }) {
                 </tr>
               </thead>
               <tbody>
-                {block.rows.map((row, rowIndex) => (
+                {filteredRows.map((row, rowIndex) => (
                   <tr key={rowIndex}>
                     <td className={styles['message-markdown__index-col']}>{rowIndex + 1}</td>
                     {row.map((cell, cellIndex) => {
-                      const header = block.headers[cellIndex]
+                      const header = filteredHeaders[cellIndex]
                       const formatted = formatDisplayValue(cell, header)
                       return (
                         <td key={cellIndex} className={getColumnClass(styles, header, formatted)}>
@@ -132,5 +148,15 @@ function renderInlineMarkdown(text: string) {
     }
     return part
   })
+}
+
+
+
+function isDbId(val: string): boolean {
+  const trimmed = val.trim()
+  const isMongoId = /^[0-9a-fA-F]{24}$/.test(trimmed)
+  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(trimmed)
+  const isHashId = /^[0-9a-fA-F]{32,64}$/.test(trimmed)
+  return isMongoId || isUuid || isHashId
 }
 
