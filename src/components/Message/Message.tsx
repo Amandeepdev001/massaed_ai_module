@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 
 import type { BotChatMessage, ChatMessage, ChatMessageHandlers } from '@/types/chat.types'
+import { getChatMessageCopyText } from '@/utils/message-copy'
 
 import { BotAvatar } from '../BotAvatar/BotAvatar'
 import { MessageMarkdown } from '../MessageMarkdown/MessageMarkdown'
@@ -136,7 +137,7 @@ function UserMessage({ message, handlers }: { message: Extract<ChatMessage, { ro
       <MessageMetaRow
         timestamp={message.timestamp}
         variant="user"
-        onCopy={() => handlers?.onCopy?.(message.id)}
+        copyText={getChatMessageCopyText(message)}
         onEdit={() => handlers?.onEdit?.(message.id)}
       />
     </div>
@@ -202,7 +203,11 @@ function BotMessage({ message, handlers }: { message: BotChatMessage; handlers?:
         <div className={`${styles['message-bot__body']} ${hasTable ? styles['message-bot__body--has-table'] : ''}`}>
           <BotMessageBody message={message} handlers={handlers} />
           {message.type !== 'typing' ? (
-            <MessageMetaRow timestamp={message.timestamp} variant="bot" onCopy={() => handlers?.onCopy?.(message.id)} />
+            <MessageMetaRow
+              timestamp={message.timestamp}
+              variant="bot"
+              copyText={getChatMessageCopyText(message)}
+            />
           ) : null}
         </div>
       ) : null}

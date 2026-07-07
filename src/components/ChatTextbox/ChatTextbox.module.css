@@ -9,6 +9,14 @@
   background: var(--ai-accent-bg);
 }
 
+.chat-textbox--interactive {
+  cursor: text;
+}
+
+.chat-textbox--disabled {
+  cursor: not-allowed;
+}
+
 @media (min-width: 640px) {
   .chat-textbox {
     padding: 16px;
@@ -54,6 +62,7 @@
 }
 
 .chat-textbox__icon-btn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,7 +86,79 @@
 .chat-textbox__icon-btn--listening {
   background: var(--brown-100);
   color: var(--ai-brand);
-  box-shadow: 0 0 0 2px var(--light-color);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ai-brand) 10%, transparent);
+  animation: mic-idle-pulse 2.4s ease-in-out infinite;
+}
+
+.chat-textbox__icon-btn--listening::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ai-brand) 16%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: mic-ring 2.4s ease-out infinite;
+}
+
+.chat-textbox__icon-btn--speaking {
+  animation: mic-speak-pulse 1.6s ease-in-out infinite;
+}
+
+.chat-textbox__icon-btn--speaking::before {
+  animation: mic-ring-active 1.6s ease-out infinite;
+}
+
+@keyframes mic-idle-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ai-brand) 10%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--ai-brand) 10%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--ai-brand) 7%, transparent);
+  }
+}
+
+@keyframes mic-speak-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--ai-brand) 12%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--ai-brand) 8%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--ai-brand) 14%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--ai-brand) 10%, transparent);
+  }
+}
+
+@keyframes mic-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes mic-ring-active {
+  0% {
+    transform: scale(1);
+    opacity: 0.28;
+  }
+
+  100% {
+    transform: scale(1.07);
+    opacity: 0;
+  }
 }
 
 .chat-textbox__speech-error {

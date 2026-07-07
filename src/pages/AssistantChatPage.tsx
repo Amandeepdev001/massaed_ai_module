@@ -55,6 +55,18 @@ export function AssistantChatPage() {
   }, [isInputDisabled])
 
   useEffect(() => {
+    if (isLoading) return
+
+    const frame = requestAnimationFrame(() => focusInput())
+    const timeout = window.setTimeout(() => focusInput(), 120)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timeout)
+    }
+  }, [isLoading, selectedChatId, isNewConversation, focusInput])
+
+  useEffect(() => {
     const wasInProgress = wasRunInProgressRef.current
     wasRunInProgressRef.current = isRunInProgress
     if (!wasInProgress || isRunInProgress) return

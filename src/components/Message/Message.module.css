@@ -318,6 +318,15 @@
   color: var(--ai-text-primary);
 }
 
+.message-meta__btn--copied {
+  color: var(--black-100);
+}
+
+.message-meta__btn--copied:hover {
+  background: var(--green-39);
+  color: var(--black-100);
+}
+
 .message-meta__btn svg {
   width: 14px;
   height: 14px;

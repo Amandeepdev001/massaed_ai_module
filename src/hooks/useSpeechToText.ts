@@ -12,6 +12,7 @@ function getSpeechRecognitionConstructor() {
 }
 
 const SILENCE_TIMEOUT_MS = 3000
+const SPEAKING_INDICATOR_MS = 350
 
 function appendTranscript(base: string, addition: string) {
   const trimmedAddition = addition.trim()
@@ -31,10 +32,12 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   const onErrorRef = useRef(onError)
 
   const [isListening, setIsListening] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const committedTextRef = useRef('')
   const onUpdateRef = useRef<((text: string) => void) | null>(null)
   const silenceTimeoutRef = useRef<number | null>(null)
+  const speakingTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     onErrorRef.current = onError
@@ -46,8 +49,28 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
     silenceTimeoutRef.current = null
   }, [])
 
+  const clearSpeakingIndicator = useCallback(() => {
+    if (speakingTimeoutRef.current !== null) {
+      window.clearTimeout(speakingTimeoutRef.current)
+      speakingTimeoutRef.current = null
+    }
+    setIsSpeaking(false)
+  }, [])
+
+  const markSpeaking = useCallback(() => {
+    setIsSpeaking(true)
+    if (speakingTimeoutRef.current !== null) {
+      window.clearTimeout(speakingTimeoutRef.current)
+    }
+    speakingTimeoutRef.current = window.setTimeout(() => {
+      speakingTimeoutRef.current = null
+      setIsSpeaking(false)
+    }, SPEAKING_INDICATOR_MS)
+  }, [])
+
   const stopListening = useCallback(() => {
     clearSilenceTimeout()
+    clearSpeakingIndicator()
 
     const recognition = recognitionRef.current
     if (!recognition) {
@@ -68,7 +91,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
     recognitionRef.current = null
     onUpdateRef.current = null
     setIsListening(false)
-  }, [clearSilenceTimeout])
+  }, [clearSilenceTimeout, clearSpeakingIndicator])
 
   const startListening = useCallback(
     (baseText: string, onUpdate: (text: string) => void): string | null => {
@@ -117,6 +140,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
         }
 
         if (hasSpeech) {
+          markSpeaking()
           scheduleSilenceTimeout()
         }
 
@@ -155,7 +179,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
         return CHAT_TEXTBOX_SPEECH_UNSUPPORTED_ERROR
       }
     },
-    [clearSilenceTimeout, stopListening],
+    [clearSilenceTimeout, markSpeaking, stopListening],
   )
 
   const toggleListening = useCallback(
@@ -174,6 +198,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
 
   return {
     isListening,
+    isSpeaking,
     startListening,
     stopListening,
     toggleListening,

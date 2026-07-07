@@ -75,11 +75,6 @@ export function useAssistantChat({ historyMessages = [] }: { historyMessages?: C
   )
 
   const handlers: ChatMessageHandlers = {
-    onCopy: (messageId) => {
-      const message = messages.find((item) => item.id === messageId)
-      if (!message || message.role !== 'user') return
-      void navigator.clipboard?.writeText(message.content.text)
-    },
     onEdit: (messageId) => {
       const message = messages.find((item) => item.id === messageId)
       if (!message || message.role !== 'user') return

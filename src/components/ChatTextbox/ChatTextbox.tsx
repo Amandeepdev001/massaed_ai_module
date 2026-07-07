@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
 } from 'react'
 
 import { useSpeechToText } from '@/hooks/useSpeechToText'
@@ -27,6 +28,13 @@ function resizeTextarea(element: HTMLTextAreaElement) {
   element.style.overflowY = element.scrollHeight > 200 ? 'auto' : 'hidden'
 }
 
+function shouldIgnoreChatTextboxContainerFocus(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest('button, a, input, textarea, select, [role="button"]'))
+  )
+}
+
 export const ChatTextbox = forwardRef<HTMLTextAreaElement, ChatTextboxProps>(function ChatTextbox(
   { placeholder, disabled = false, autoFocus = false, enableSpeechToText = true, onSend },
   ref,
@@ -39,6 +47,7 @@ export const ChatTextbox = forwardRef<HTMLTextAreaElement, ChatTextboxProps>(fun
   })
 
   const isSpeechListening = enableSpeechToText && speechToText.isListening
+  const isSpeechSpeaking = enableSpeechToText && speechToText.isSpeaking
 
   const setRef = useCallback(
     (node: HTMLTextAreaElement | null) => {
@@ -49,10 +58,22 @@ export const ChatTextbox = forwardRef<HTMLTextAreaElement, ChatTextboxProps>(fun
     [ref],
   )
 
-  useEffect(() => {
-    if (!autoFocus) return
+  const focusTextarea = useCallback(() => {
+    if (disabled || isSpeechListening) return
     innerRef.current?.focus()
-  }, [autoFocus])
+  }, [disabled, isSpeechListening])
+
+  useEffect(() => {
+    if (!autoFocus || disabled) return
+
+    const frame = requestAnimationFrame(() => focusTextarea())
+    const timeout = window.setTimeout(() => focusTextarea(), 120)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timeout)
+    }
+  }, [autoFocus, disabled, focusTextarea])
 
   useEffect(() => {
     if (!disabled || !enableSpeechToText) return
@@ -102,8 +123,24 @@ export const ChatTextbox = forwardRef<HTMLTextAreaElement, ChatTextboxProps>(fun
     }
   }
 
+  const handleContainerMouseDown = (event: MouseEvent<HTMLDivElement>) => {
+    if (disabled || isSpeechListening) return
+    if (shouldIgnoreChatTextboxContainerFocus(event.target)) return
+
+    event.preventDefault()
+    focusTextarea()
+  }
+
   return (
-    <div className={styles['chat-textbox']}>
+    <div
+      className={[
+        styles['chat-textbox'],
+        disabled ? styles['chat-textbox--disabled'] : styles['chat-textbox--interactive'],
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      onMouseDown={handleContainerMouseDown}
+    >
       <textarea
         ref={setRef}
         className={styles['chat-textbox__textarea']}
@@ -125,6 +162,7 @@ export const ChatTextbox = forwardRef<HTMLTextAreaElement, ChatTextboxProps>(fun
             className={[
               styles['chat-textbox__icon-btn'],
               isSpeechListening ? styles['chat-textbox__icon-btn--listening'] : '',
+              isSpeechSpeaking ? styles['chat-textbox__icon-btn--speaking'] : '',
             ]
               .filter(Boolean)
               .join(' ')}
