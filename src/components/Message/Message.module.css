@@ -12,6 +12,10 @@
   color: var(--ai-text-primary);
   text-align: right;
   white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 .message-bot {
@@ -90,6 +94,10 @@
     max-height 0.2s ease,
     opacity 0.2s ease,
     margin 0.2s ease;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 .message-bot__analyses.is-open {
@@ -116,6 +124,10 @@
   font-size: 0.875rem;
   line-height: 1.43;
   color: var(--ai-text-secondary);
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 .message-bubble--has-table {
@@ -173,6 +185,10 @@
   font-weight: 500;
   color: var(--ai-text-primary);
   transition: background 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .message-chip:hover {
@@ -208,6 +224,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 8px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .message-attachment {

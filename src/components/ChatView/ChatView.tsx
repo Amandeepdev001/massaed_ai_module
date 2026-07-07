@@ -60,6 +60,8 @@ export function ChatView({
 
   const handleContainerClick = useCallback(
     (event: MouseEvent<HTMLElement>) => {
+      if (window.getSelection()?.toString()) return
+
       const target = event.target as HTMLElement
       if (target.closest('button, a, input, textarea, select, [role="button"]')) return
       onContainerClick?.()

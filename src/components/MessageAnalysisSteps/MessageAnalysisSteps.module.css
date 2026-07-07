@@ -32,6 +32,10 @@
   height: 20px;
   flex-shrink: 0;
   color: var(--primary-stroke);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .analysis-step__marker svg {
