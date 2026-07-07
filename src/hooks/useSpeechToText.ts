@@ -11,6 +11,8 @@ function getSpeechRecognitionConstructor() {
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null
 }
 
+const SILENCE_TIMEOUT_MS = 3000
+
 function appendTranscript(base: string, addition: string) {
   const trimmedAddition = addition.trim()
   if (!trimmedAddition) return base
@@ -32,12 +34,21 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const committedTextRef = useRef('')
   const onUpdateRef = useRef<((text: string) => void) | null>(null)
+  const silenceTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     onErrorRef.current = onError
   }, [onError])
 
+  const clearSilenceTimeout = useCallback(() => {
+    if (silenceTimeoutRef.current === null) return
+    window.clearTimeout(silenceTimeoutRef.current)
+    silenceTimeoutRef.current = null
+  }, [])
+
   const stopListening = useCallback(() => {
+    clearSilenceTimeout()
+
     const recognition = recognitionRef.current
     if (!recognition) {
       setIsListening(false)
@@ -57,7 +68,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
     recognitionRef.current = null
     onUpdateRef.current = null
     setIsListening(false)
-  }, [])
+  }, [clearSilenceTimeout])
 
   const startListening = useCallback(
     (baseText: string, onUpdate: (text: string) => void): string | null => {
@@ -77,8 +88,17 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
       recognition.lang =
         typeof navigator !== 'undefined' ? (navigator.language || 'en-US') : 'en-US'
 
+      const scheduleSilenceTimeout = () => {
+        clearSilenceTimeout()
+        silenceTimeoutRef.current = window.setTimeout(() => {
+          silenceTimeoutRef.current = null
+          stopListening()
+        }, SILENCE_TIMEOUT_MS)
+      }
+
       recognition.onresult = (event) => {
         let interimTranscript = ''
+        let hasSpeech = false
 
         for (let index = event.resultIndex; index < event.results.length; index++) {
           const result = event.results[index]
@@ -87,11 +107,17 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
           const transcript = result[0]?.transcript ?? ''
           if (!transcript) continue
 
+          hasSpeech = true
+
           if (result.isFinal) {
             committedTextRef.current = appendTranscript(committedTextRef.current, transcript)
           } else {
             interimTranscript = appendTranscript(interimTranscript, transcript)
           }
+        }
+
+        if (hasSpeech) {
+          scheduleSilenceTimeout()
         }
 
         const nextValue = interimTranscript
@@ -123,12 +149,13 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
         recognition.start()
         recognitionRef.current = recognition
         setIsListening(true)
+        scheduleSilenceTimeout()
         return null
       } catch {
         return CHAT_TEXTBOX_SPEECH_UNSUPPORTED_ERROR
       }
     },
-    [stopListening],
+    [clearSilenceTimeout, stopListening],
   )
 
   const toggleListening = useCallback(
