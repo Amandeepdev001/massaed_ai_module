@@ -1,6 +1,7 @@
 import type { ChatMessage, ChatMessageHandlers } from '@/types/chat.types'
 
-import { ChatMessageItem } from './Message'
+import { ChatMessageItem } from '../Message/Message'
+import styles from './ChatMessageList.module.css'
 
 export function ChatMessageList({
   messages,
@@ -10,10 +11,11 @@ export function ChatMessageList({
   handlers?: ChatMessageHandlers
 }) {
   return (
-    <div className="message-list" role="log" aria-live="polite">
+    <div className={styles['message-list']} role="log" aria-live="polite">
       {messages.map((message) => (
         <ChatMessageItem key={message.id} message={message} handlers={handlers} />
       ))}
     </div>
   )
 }
+

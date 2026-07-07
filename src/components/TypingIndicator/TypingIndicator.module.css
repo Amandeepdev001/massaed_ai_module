@@ -1,0 +1,17 @@
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.typing-indicator__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--white-100);
+  transition: background 0.3s ease;
+}
+
+.typing-indicator__dot.is-active {
+  background: var(--ai-brand);
+}

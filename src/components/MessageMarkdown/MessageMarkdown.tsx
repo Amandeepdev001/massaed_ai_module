@@ -1,30 +1,31 @@
 import { parseMarkdownBlocks } from '@/utils/parse-markdown-content'
 import { formatDisplayValue } from '@/utils/format-display-value'
+import styles from './MessageMarkdown.module.css'
 
 export function MessageMarkdown({ content }: { content: string }) {
   const blocks = parseMarkdownBlocks(content)
 
   return (
-    <div className="message-markdown">
+    <div className={styles['message-markdown']}>
       {blocks.map((block, index) => {
         if (block.kind === 'paragraph') {
           return (
-            <p key={index} className="message-markdown__paragraph">
+            <p key={index} className={styles['message-markdown__paragraph']}>
               {renderInlineMarkdown(block.text)}
             </p>
           )
         }
 
         return (
-          <div key={index} className="message-markdown__table-wrap table-scrollbar">
-            <table className="message-markdown__table">
+          <div key={index} className={`${styles['message-markdown__table-wrap']} ${styles['table-scrollbar']}`}>
+            <table className={styles['message-markdown__table']}>
               <thead>
                 <tr>
-                  <th className="message-markdown__index-col" scope="col">
+                  <th className={styles['message-markdown__index-col']} scope="col">
                     #
                   </th>
                   {block.headers.map((header, cellIndex) => (
-                    <th key={cellIndex} scope="col" className={getColumnClass(header)}>
+                    <th key={cellIndex} scope="col" className={getColumnClass(styles, header)}>
                       {renderInlineMarkdown(header)}
                     </th>
                   ))}
@@ -33,12 +34,12 @@ export function MessageMarkdown({ content }: { content: string }) {
               <tbody>
                 {block.rows.map((row, rowIndex) => (
                   <tr key={rowIndex}>
-                    <td className="message-markdown__index-col">{rowIndex + 1}</td>
+                    <td className={styles['message-markdown__index-col']}>{rowIndex + 1}</td>
                     {row.map((cell, cellIndex) => {
                       const header = block.headers[cellIndex]
                       const formatted = formatDisplayValue(cell, header)
                       return (
-                        <td key={cellIndex} className={getColumnClass(header, formatted)}>
+                        <td key={cellIndex} className={getColumnClass(styles, header, formatted)}>
                           {renderCellContent(formatted, header)}
                         </td>
                       )
@@ -59,9 +60,9 @@ function isListHeader(header: string) {
   return headerLower === 'clients' || headerLower.endsWith(' clients')
 }
 
-function getColumnClass(header: string, cellValue = '') {
+function getColumnClass(stylesObj: Record<string, string>, header: string, cellValue = '') {
   if (parseListItems(cellValue, header) || isListHeader(header)) {
-    return 'message-markdown__wrap-col'
+    return stylesObj['message-markdown__wrap-col']
   }
 
   const headerLower = header.toLowerCase()
@@ -74,10 +75,10 @@ function getColumnClass(header: string, cellValue = '') {
     headerLower.includes('note') ||
     cellValue.length > 60
   ) {
-    return 'message-markdown__wrap-col'
+    return stylesObj['message-markdown__wrap-col']
   }
 
-  return 'message-markdown__compact-col'
+  return stylesObj['message-markdown__compact-col']
 }
 
 function parseListItems(value: string, header: string): string[] | null {
@@ -106,11 +107,11 @@ function renderCellContent(value: string, header: string) {
 
   if (items) {
     return (
-      <div className="message-markdown__chip-list">
-        <p className="message-markdown__chip-count">{items.length} items</p>
-        <div className="message-markdown__chips">
+      <div className={styles['message-markdown__chip-list']}>
+        <p className={styles['message-markdown__chip-count']}>{items.length} items</p>
+        <div className={styles['message-markdown__chips']}>
           {items.map((item, index) => (
-            <span key={`${item}-${index}`} className="message-markdown__chip">
+            <span key={`${item}-${index}`} className={styles['message-markdown__chip']}>
               {item}
             </span>
           ))}
@@ -132,3 +133,4 @@ function renderInlineMarkdown(text: string) {
     return part
   })
 }
+

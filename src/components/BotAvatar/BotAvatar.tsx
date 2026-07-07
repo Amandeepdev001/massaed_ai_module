@@ -1,9 +1,10 @@
-import { MagicWandIcon } from './icons'
+import { MagicWandIcon } from '../icons'
+import styles from './BotAvatar.module.css'
 
 export function BotAvatar({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
   return (
     <div
-      className={`bot-avatar bot-avatar--${size}`}
+      className={`${styles['bot-avatar']} ${styles[`bot-avatar--${size}`]}`}
       role="img"
       aria-label="Ai Bot"
     >
@@ -11,3 +12,4 @@ export function BotAvatar({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
     </div>
   )
 }
+

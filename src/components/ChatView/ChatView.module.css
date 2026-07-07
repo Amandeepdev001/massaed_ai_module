@@ -1,0 +1,126 @@
+.chat-view {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-radius: 24px;
+  box-shadow: var(--ai-chat-panel-shadow, var(--chat-panel-shadow));
+  cursor: text;
+}
+
+@media (min-width: 640px) {
+  .chat-view {
+    border-radius: var(--ai-radius-panel);
+  }
+}
+
+.chat-view__panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px solid var(--ai-border);
+  border-radius: inherit;
+  background: var(--ai-chat-bg);
+  position: relative;
+}
+
+.chat-view__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+.chat-view__content {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  padding: 16px 16px 0;
+}
+
+@media (min-width: 640px) {
+  .chat-view__content {
+    padding: 16px 24px 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .chat-view__content {
+    padding: 16px 32px 0;
+  }
+}
+
+.chat-view__footer {
+  flex-shrink: 0;
+  padding: 16px;
+}
+
+.chat-view__scroll-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 188px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--gray-65, #d1d5db);
+  background: var(--white-100);
+  color: var(--gray-46, #6b7280);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+  animation: chat-scroll-btn-in 0.3s ease;
+}
+
+@keyframes chat-scroll-btn-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.chat-view__scroll-btn:hover {
+  background: var(--white-95, #f9fafb);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.chat-view__scroll-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 640px) {
+  .chat-view__footer {
+    padding: 16px 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .chat-view__footer {
+    padding: 16px 32px;
+  }
+}
+
+.chat-view__footer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

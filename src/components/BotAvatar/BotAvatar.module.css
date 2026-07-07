@@ -1,0 +1,28 @@
+.bot-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--ai-brand);
+  color: var(--white-100);
+}
+
+.bot-avatar--sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--ai-border);
+  padding: 4px;
+}
+
+.bot-avatar--lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.bot-avatar svg {
+  width: 100%;
+  height: 100%;
+}

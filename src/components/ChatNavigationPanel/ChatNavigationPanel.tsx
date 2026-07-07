@@ -1,7 +1,8 @@
 import { NEW_CONVERSATION_ID } from '@/constants/chat.constants'
 import type { ChatSessionItem } from '@/types/chat-navigation.types'
 
-import { PlusIcon, SearchIcon } from './icons'
+import { PlusIcon, SearchIcon } from '../icons'
+import styles from './ChatNavigationPanel.module.css'
 
 export function ChatNavigationPanel({
   sessions,
@@ -25,26 +26,26 @@ export function ChatNavigationPanel({
 
   return (
     <>
-      <div className="sidebar__search">
-        <SearchIcon className="sidebar__search-icon" />
-        <input className="sidebar__search-input" type="search" placeholder="Search here" aria-label="Search conversations" />
+      <div className={styles.sidebar__search}>
+        <SearchIcon className={styles.sidebar__search_icon ?? styles['sidebar__search-icon']} />
+        <input className={styles['sidebar__search-input']} type="search" placeholder="Search here" aria-label="Search conversations" />
       </div>
 
-      <div className="sidebar__sessions custom-scrollbar">
+      <div className={`${styles.sidebar__sessions} custom-scrollbar`}>
         {Object.entries(groups).map(([groupLabel, items]) => (
           <div key={groupLabel}>
-            <p className="sidebar__group-label">{groupLabel}</p>
+            <p className={styles['sidebar__group-label']}>{groupLabel}</p>
             {items.map((session) => {
               const isActive = !isNewConversation && selectedChatId === session.id
               return (
                 <button
                   key={session.id}
                   type="button"
-                  className={`sidebar__item ${isActive ? 'is-active' : ''}`}
+                  className={`${styles.sidebar__item} ${isActive ? styles['is-active'] : ''}`}
                   onClick={() => onSelectedChatChange(session.id)}
                 >
-                  <span className="sidebar__item-title">{session.title}</span>
-                  {session.timeLabel ? <span className="sidebar__item-time">{session.timeLabel}</span> : null}
+                  <span className={styles['sidebar__item-title']}>{session.title}</span>
+                  {session.timeLabel ? <span className={styles['sidebar__item-time']}>{session.timeLabel}</span> : null}
                 </button>
               )
             })}
@@ -52,10 +53,10 @@ export function ChatNavigationPanel({
         ))}
       </div>
 
-      <div className="sidebar__footer">
+      <div className={styles.sidebar__footer}>
         <button
           type="button"
-          className="sidebar__new-btn"
+          className={styles['sidebar__new-btn']}
           onClick={onNewConversation}
           aria-current={isNewConversation || selectedChatId === NEW_CONVERSATION_ID ? 'page' : undefined}
         >
@@ -66,3 +67,4 @@ export function ChatNavigationPanel({
     </>
   )
 }
+

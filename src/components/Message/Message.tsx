@@ -2,12 +2,13 @@ import { useEffect, useId, useState } from 'react'
 
 import type { BotChatMessage, ChatMessage, ChatMessageHandlers } from '@/types/chat.types'
 
-import { BotAvatar } from './BotAvatar'
-import { MessageMarkdown } from './MessageMarkdown'
-import { ChevronRightIcon } from './icons'
-import { MessageAnalysisSteps } from './MessageAnalysisSteps'
+import { BotAvatar } from '../BotAvatar/BotAvatar'
+import { MessageMarkdown } from '../MessageMarkdown/MessageMarkdown'
+import { ChevronRightIcon } from '../icons'
+import { MessageAnalysisSteps } from '../MessageAnalysisSteps/MessageAnalysisSteps'
 import { MessageMetaRow } from './MessageMetaRow'
-import { TypingIndicator } from './TypingIndicator'
+import { TypingIndicator } from '../TypingIndicator/TypingIndicator'
+import styles from './Message.module.css'
 
 function MessageChips({
   chips,
@@ -17,9 +18,9 @@ function MessageChips({
   onSelect?: (id: string) => void
 }) {
   return (
-    <div className="message-chips">
+    <div className={styles['message-chips']}>
       {chips.map((chip) => (
-        <button key={chip.id} type="button" className="message-chip" onClick={() => onSelect?.(chip.id)}>
+        <button key={chip.id} type="button" className={styles['message-chip']} onClick={() => onSelect?.(chip.id)}>
           {chip.label}
         </button>
       ))}
@@ -33,12 +34,12 @@ function MessageAttachments({
   attachments: { id: string; title: string; mediaType: string; sizeLabel?: string; typeLabel?: string }[]
 }) {
   return (
-    <div className="message-attachments">
+    <div className={styles['message-attachments']}>
       {attachments.map((item) => (
-        <div key={item.id} className="message-attachment">
-          <div className="message-attachment__thumb">{item.mediaType.toUpperCase()}</div>
-          <div className="message-attachment__label">{item.title}</div>
-          {item.sizeLabel ? <div className="message-attachment__meta">{item.sizeLabel}</div> : null}
+        <div key={item.id} className={styles['message-attachment']}>
+          <div className={styles['message-attachment__thumb']}>{item.mediaType.toUpperCase()}</div>
+          <div className={styles['message-attachment__label']}>{item.title}</div>
+          {item.sizeLabel ? <div className={styles['message-attachment__meta']}>{item.sizeLabel}</div> : null}
         </div>
       ))}
     </div>
@@ -55,20 +56,24 @@ function BotMessageBody({
   switch (message.type) {
     case 'typing':
       return (
-        <div className="message-bubble message-bubble--typing">
+        <div className={`${styles['message-bubble']} ${styles['message-bubble--typing']}`}>
           <TypingIndicator />
         </div>
       )
-    case 'text':
+    case 'text': {
+      const hasTable = message.content.text.includes('\n|') || message.content.text.includes('\n| ')
       return (
-        <div className="message-bubble message-bubble--text">
+        <div className={`${styles['message-bubble']} ${styles['message-bubble--text']} ${hasTable ? styles['message-bubble--has-table'] : ''}`}>
           <MessageMarkdown content={message.content.text} />
         </div>
       )
+    }
     case 'status':
       return (
         <div
-          className={`message-bubble message-bubble--status ${message.content.tone === 'positive' ? 'is-positive' : 'is-negative'}`}
+          className={`${styles['message-bubble']} ${styles['message-bubble--status']} ${
+            message.content.tone === 'positive' ? styles['is-positive'] : styles['is-negative']
+          }`}
         >
           <p>{message.content.text}</p>
           {message.content.questions ? (
@@ -81,7 +86,7 @@ function BotMessageBody({
       )
     case 'selectors':
       return (
-        <div className="message-bubble message-bubble--rich">
+        <div className={`${styles['message-bubble']} ${styles['message-bubble--rich']}`}>
           <p>{message.content.text}</p>
           <MessageChips
             chips={message.content.selectors}
@@ -91,10 +96,10 @@ function BotMessageBody({
       )
     case 'summary':
       return (
-        <div className="message-bubble message-bubble--rich">
+        <div className={`${styles['message-bubble']} ${styles['message-bubble--rich']}`}>
           <p>{message.content.text}</p>
-          <p className="message-summary__title">{message.content.summaryTitle}</p>
-          <ul className="message-summary__fields">
+          <p className={styles['message-summary__title']}>{message.content.summaryTitle}</p>
+          <ul className={styles['message-summary__fields']}>
             {message.content.fields.map((field) => (
               <li key={field.label}>
                 <strong>{field.label}:</strong> {field.value}
@@ -102,7 +107,7 @@ function BotMessageBody({
             ))}
           </ul>
           {message.content.question ? (
-            <p className="message-summary__question">{message.content.question}</p>
+            <p className={styles['message-summary__question']}>{message.content.question}</p>
           ) : null}
           {message.content.actions ? (
             <MessageChips
@@ -114,7 +119,7 @@ function BotMessageBody({
       )
     case 'attachments':
       return (
-        <div className="message-bubble message-bubble--rich">
+        <div className={`${styles['message-bubble']} ${styles['message-bubble--rich']}`}>
           <MessageAttachments attachments={message.content.attachments} />
           <p>{message.content.text}</p>
         </div>
@@ -126,8 +131,8 @@ function BotMessageBody({
 
 function UserMessage({ message, handlers }: { message: Extract<ChatMessage, { role: 'user' }>; handlers?: ChatMessageHandlers }) {
   return (
-    <div className="message-user">
-      <p className="message-user__text">{message.content.text}</p>
+    <div className={styles['message-user']}>
+      <p className={styles['message-user__text']}>{message.content.text}</p>
       <MessageMetaRow
         timestamp={message.timestamp}
         variant="user"
@@ -151,24 +156,26 @@ function BotMessage({ message, handlers }: { message: BotChatMessage; handlers?:
     if (message.defaultAnalysesOpen) setIsOpen(true)
   }, [message.defaultAnalysesOpen, analyses.length])
 
+  const hasTable = message.type === 'text' && (message.content.text.includes('\n|') || message.content.text.includes('\n| '))
+
   return (
-    <article className="message-bot">
-      <div className="message-bot__header">
+    <article className={styles['message-bot']}>
+      <div className={styles['message-bot__header']}>
         <BotAvatar />
-        <div className="message-bot__meta">
-          <p className="message-bot__name">{message.botName ?? 'Ai Bot'}</p>
+        <div className={styles['message-bot__meta']}>
+          <p className={styles['message-bot__name']}>{message.botName ?? 'Ai Bot'}</p>
           {hasAnalyses ? (
-            <div className="message-bot__analyses-toggle">
+            <div className={styles['message-bot__analyses-toggle']}>
               <button
                 type="button"
-                className="message-bot__analyses-label"
+                className={styles['message-bot__analyses-label']}
                 onClick={() => setIsOpen((open) => !open)}
               >
                 Analyses {analyses.length} {analyses.length === 1 ? 'step' : 'steps'}
               </button>
               <button
                 type="button"
-                className={`message-bot__chevron-btn ${isOpen ? 'is-open' : ''}`}
+                className={`${styles['message-bot__chevron-btn']} ${isOpen ? styles['is-open'] : ''}`}
                 aria-expanded={isOpen}
                 aria-controls={analysesContentId}
                 aria-label={isOpen ? 'Collapse analyses' : 'Expand analyses'}
@@ -184,7 +191,7 @@ function BotMessage({ message, handlers }: { message: BotChatMessage; handlers?:
       {hasAnalyses ? (
         <div
           id={analysesContentId}
-          className={`message-bot__analyses ${isOpen ? 'is-open' : ''}`}
+          className={`${styles['message-bot__analyses']} ${isOpen ? styles['is-open'] : ''}`}
           aria-hidden={!isOpen}
         >
           <MessageAnalysisSteps steps={analyses} />
@@ -192,7 +199,7 @@ function BotMessage({ message, handlers }: { message: BotChatMessage; handlers?:
       ) : null}
 
       {showBubble ? (
-        <div className="message-bot__body">
+        <div className={`${styles['message-bot__body']} ${hasTable ? styles['message-bot__body--has-table'] : ''}`}>
           <BotMessageBody message={message} handlers={handlers} />
           {message.type !== 'typing' ? (
             <MessageMetaRow timestamp={message.timestamp} variant="bot" onCopy={() => handlers?.onCopy?.(message.id)} />
@@ -216,10 +223,10 @@ export function ChatMessageItem({
 
   if (message.type === 'typing' && (message.analyses?.length ?? 0) === 0) {
     return (
-      <div className="message-bot">
-        <div className="message-bot__header">
+      <div className={styles['message-bot']}>
+        <div className={styles['message-bot__header']}>
           <BotAvatar />
-          <div className="message-bubble message-bubble--typing">
+          <div className={`${styles['message-bubble']} ${styles['message-bubble--typing']}`}>
             <TypingIndicator />
           </div>
         </div>
@@ -229,3 +236,4 @@ export function ChatMessageItem({
 
   return <BotMessage message={message} handlers={handlers} />
 }
+

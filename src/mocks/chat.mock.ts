@@ -14,10 +14,10 @@ export const CHAT_TEXTBOX_PLACEHOLDER =
   "Ask AI Bot what to do – e.g 'Move sprint 12 blockers to Maya and notify the team'"
 
 export const MOCK_CHAT_SUGGESTIONS: ChatSuggestion[] = [
-  { id: 'sug-1', label: 'Delete board' },
+  { id: 'sug-1', label: 'Client Details' },
   { id: 'sug-2', label: 'Create Meeting' },
   { id: 'sug-3', label: 'Invite member' },
-  { id: 'sug-4', label: 'Change tasks status' },
+  { id: 'sug-4', label: 'Tasks List' },
 ]
 
 const BOT_ANALYSES = MOCK_ANALYSIS_STEPS

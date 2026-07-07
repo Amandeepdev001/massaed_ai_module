@@ -3,10 +3,11 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNo
 import type { ChatMessage, ChatMessageHandlers } from '@/types/chat.types'
 import type { ChatSuggestion } from '@/types/chat-suggestions.types'
 
-import { ChatMessageList } from './ChatMessageList'
-import { ChatSuggestions } from './ChatSuggestions'
-import { ChatWelcome } from './ChatWelcome'
-import { ChevronDownIcon } from './icons'
+import { ChatMessageList } from '../ChatMessageList/ChatMessageList'
+import { ChatSuggestions } from '../ChatSuggestions/ChatSuggestions'
+import { ChatWelcome } from '../ChatWelcome/ChatWelcome'
+import { ChevronDownIcon } from '../icons'
+import styles from './ChatView.module.css'
 
 const NEAR_BOTTOM_THRESHOLD = 120
 
@@ -82,10 +83,10 @@ export function ChatView({
   }, [messages, updateScrollState])
 
   return (
-    <div className="chat-view" onClick={handleContainerClick}>
-      <section className="chat-view__panel">
-        <div className="chat-view__scroll custom-scrollbar" ref={scrollContainerRef} onScroll={handleScroll}>
-          <div className="chat-view__content">
+    <div className={styles['chat-view']} onClick={handleContainerClick}>
+      <section className={styles['chat-view__panel']}>
+        <div className={`${styles['chat-view__scroll']} custom-scrollbar`} ref={scrollContainerRef} onScroll={handleScroll}>
+          <div className={styles['chat-view__content']}>
             {isEmpty ? (
               <ChatWelcome name={welcomeName} />
             ) : (
@@ -100,7 +101,7 @@ export function ChatView({
         {!isEmpty && showScrollButton ? (
           <button
             type="button"
-            className="chat-view__scroll-btn"
+            className={styles['chat-view__scroll-btn']}
             aria-label="Scroll to bottom"
             onClick={() => scrollToBottom()}
           >
@@ -109,8 +110,8 @@ export function ChatView({
         ) : null}
 
         {footer || isEmpty ? (
-          <footer className="chat-view__footer">
-            <div className="chat-view__footer-stack">
+          <footer className={styles['chat-view__footer']}>
+            <div className={styles['chat-view__footer-stack']}>
               {isEmpty && suggestions ? (
                 <ChatSuggestions suggestions={suggestions} onSuggestionSelect={onSuggestionSelect} />
               ) : null}
@@ -122,3 +123,4 @@ export function ChatView({
     </div>
   )
 }
+

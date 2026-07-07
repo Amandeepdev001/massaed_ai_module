@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import styles from './TypingIndicator.module.css'
 
 const DOT_COUNT = 3
 const DOT_STEP_MS = 400
@@ -24,14 +25,15 @@ export function TypingIndicator() {
   }, [reduceMotion])
 
   return (
-    <span className="typing-indicator" role="status" aria-label="Ai Bot is typing">
+    <span className={styles['typing-indicator']} role="status" aria-label="Ai Bot is typing">
       {Array.from({ length: DOT_COUNT }).map((_, index) => (
         <span
           key={index}
-          className={`typing-indicator__dot ${reduceMotion || index === activeIndex ? 'is-active' : ''}`}
+          className={`${styles['typing-indicator__dot']} ${reduceMotion || index === activeIndex ? styles['is-active'] : ''}`}
           aria-hidden
         />
       ))}
     </span>
   )
 }
+

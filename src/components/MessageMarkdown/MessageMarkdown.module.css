@@ -1,0 +1,140 @@
+.message-markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-markdown__paragraph {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.message-markdown__table-wrap {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  overflow: auto;
+  max-height: 360px;
+  border-radius: 8px;
+  border: 1px solid var(--ai-border);
+}
+
+.message-markdown__table {
+  width: auto;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  table-layout: auto;
+}
+
+.message-markdown__index-col {
+  width: 36px;
+  padding: 8px 6px !important;
+  text-align: center !important;
+  color: var(--gray-46);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.message-markdown__table th.message-markdown__index-col {
+  background: var(--brown-100);
+}
+
+.message-markdown__table td.message-markdown__index-col {
+  background: var(--white-95);
+}
+
+.message-markdown__table th,
+.message-markdown__table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ai-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.message-markdown__compact-col {
+  white-space: nowrap;
+}
+
+.message-markdown__wrap-col {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 320px;
+  min-width: 160px;
+  line-height: 1.45;
+}
+
+.table-scrollbar {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pb-bg-en-1) transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  background: transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--pb-bg-en-1), var(--button-bg-2));
+  border: none;
+  border-radius: 999px;
+}
+
+.message-markdown__chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message-markdown__chip-count {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray-46);
+}
+
+.message-markdown__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 300px;
+  padding: 2px 0;
+}
+
+.message-markdown__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ai-border);
+  background: var(--white-95);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--ai-text-primary);
+  white-space: nowrap;
+}
+
+.message-markdown__table th.message-markdown__index-col,
+.message-markdown__table td.message-markdown__index-col {
+  white-space: nowrap;
+  max-width: 44px;
+}
+
+.message-markdown__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.message-markdown__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--brown-100);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ai-border);
+}

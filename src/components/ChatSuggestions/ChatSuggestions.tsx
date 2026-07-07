@@ -1,6 +1,7 @@
 import type { ChatSuggestion } from '@/types/chat-suggestions.types'
 
-import { StarIcon } from './icons'
+import { StarIcon } from '../icons'
+import styles from './ChatSuggestions.module.css'
 
 export function ChatSuggestions({
   suggestions,
@@ -12,17 +13,17 @@ export function ChatSuggestions({
   if (suggestions.length === 0) return null
 
   return (
-    <section className="chat-suggestions" aria-label="Suggested for you">
-      <div className="chat-suggestions__header">
+    <section className={styles['chat-suggestions']} aria-label="Suggested for you">
+      <div className={styles['chat-suggestions__header']}>
         <StarIcon />
-        <span className="chat-suggestions__title">Suggested for you</span>
+        <span className={styles['chat-suggestions__title']}>Suggested for you</span>
       </div>
-      <div className="chat-suggestions__chips">
+      <div className={styles['chat-suggestions__chips']}>
         {suggestions.map((suggestion) => (
           <button
             key={suggestion.id}
             type="button"
-            className="chat-suggestions__chip"
+            className={styles['chat-suggestions__chip']}
             onClick={() => onSuggestionSelect?.(suggestion)}
           >
             {suggestion.label}
@@ -32,3 +33,4 @@ export function ChatSuggestions({
     </section>
   )
 }
+

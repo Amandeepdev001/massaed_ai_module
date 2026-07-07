@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 
-import { ChatNavigationPanel } from '@/components/ChatNavigationPanel'
-import { ChatTextbox } from '@/components/ChatTextbox'
-import { ChatView } from '@/components/ChatView'
-import { MassaedLoader } from '@/components/MassaedLoader'
+import { ChatNavigationPanel } from '@/components/ChatNavigationPanel/ChatNavigationPanel'
+import { ChatTextbox } from '@/components/ChatTextbox/ChatTextbox'
+import { ChatView } from '@/components/ChatView/ChatView'
+import { MassaedLoader } from '@/components/MassaedLoader/MassaedLoader'
 import { useAssistantChat } from '@/hooks/useAssistantChat'
 import { useChatSession } from '@/hooks/useChatSession'
 import { ChatLayout } from '@/layout/ChatLayout'

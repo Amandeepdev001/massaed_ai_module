@@ -6,7 +6,8 @@ import {
   type KeyboardEvent,
 } from 'react'
 
-import { MicIcon, SendIcon } from './icons'
+import { MicIcon, SendIcon } from '../icons'
+import styles from './ChatTextbox.module.css'
 
 export interface ChatTextboxProps {
   placeholder?: string
@@ -60,23 +61,23 @@ export const ChatTextbox = forwardRef<HTMLTextAreaElement, ChatTextboxProps>(fun
   }
 
   return (
-    <div className="chat-textbox">
+    <div className={styles['chat-textbox']}>
       <textarea
         ref={setRef}
-        className="chat-textbox__textarea"
+        className={styles['chat-textbox__textarea']}
         placeholder={placeholder}
         rows={1}
         disabled={disabled}
         onInput={(event) => resizeTextarea(event.currentTarget)}
         onKeyDown={handleKeyDown}
       />
-      <div className="chat-textbox__toolbar">
-        <button type="button" className="chat-textbox__icon-btn" aria-label="Voice input" disabled={disabled}>
+      <div className={styles['chat-textbox__toolbar']}>
+        <button type="button" className={styles['chat-textbox__icon-btn']} aria-label="Voice input" disabled={disabled}>
           <MicIcon />
         </button>
         <button
           type="button"
-          className="chat-textbox__send-btn"
+          className={styles['chat-textbox__send-btn']}
           aria-label="Send message"
           disabled={disabled}
           onClick={handleSend}
@@ -87,3 +88,4 @@ export const ChatTextbox = forwardRef<HTMLTextAreaElement, ChatTextboxProps>(fun
     </div>
   )
 })
+

@@ -1,0 +1,39 @@
+.ai-app {
+  display: flex;
+  height: 100dvh;
+  min-height: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.workspace {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  gap: 12px;
+  padding: 12px;
+  background: var(--ai-workspace-bg);
+}
+
+@media (min-width: 640px) {
+  .workspace {
+    gap: 16px;
+    padding: 16px;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--ai-sidebar-width);
+  min-height: 0;
+  height: 100%;
+  border-radius: var(--ai-radius-panel);
+  border: 1px solid var(--ai-border);
+  background: var(--ai-panel-bg);
+  padding: 8px;
+  gap: 12px;
+  box-shadow: var(--card-shadow);
+}
