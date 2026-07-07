@@ -16,7 +16,7 @@ import {
   conversationsResponseToChatMessages,
 } from '@/utils/conversation-to-messages'
 
-const WELCOME_NAME = 'Aryan'
+const WELCOME_NAME = 'Aman Vashisht'
 
 export function AssistantChatPage() {
   const { data, isLoading, isFetching } = useGetChatHistoryQuery()
