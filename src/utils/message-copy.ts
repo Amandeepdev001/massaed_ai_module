@@ -1,5 +1,5 @@
 import type { ChatMessage } from '@/types/chat.types'
-import type { MessageSummaryField, MessageTableData } from '@/types/message.types'
+import type { MessageSummaryField } from '@/types/message.types'
 
 function joinCopyLines(...parts: Array<string | undefined>): string {
   return parts
@@ -8,22 +8,19 @@ function joinCopyLines(...parts: Array<string | undefined>): string {
     .join('\n\n')
 }
 
-function formatTableCopyText(table: MessageTableData): string {
-  const lines: string[] = []
+function getLastNonTableLine(content: string): string {
+  const lines = content.split('\n')
 
-  if (table.supportingText?.trim()) {
-    lines.push(table.supportingText.trim())
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index]?.trim() ?? ''
+    if (!line) continue
+    if (line.startsWith('|')) continue
+
+    return line
   }
 
-  if (table.columns.length > 0) {
-    lines.push(table.columns.join('\t'))
-
-    for (const row of table.rows) {
-      lines.push(row.join('\t'))
-    }
-  }
-
-  return lines.join('\n')
+  const nonEmptyLines = lines.map((line) => line.trim()).filter(Boolean)
+  return nonEmptyLines[nonEmptyLines.length - 1] ?? content.trim()
 }
 
 function formatSummaryFieldsCopyText(fields: MessageSummaryField[]): string {
@@ -36,10 +33,10 @@ function getBotMessageCopyText(message: Extract<ChatMessage, { role: 'bot' }>): 
       return ''
 
     case 'text':
-      return message.content.text
+      return getLastNonTableLine(message.content.text)
 
     case 'table':
-      return joinCopyLines(message.content.text, formatTableCopyText(message.content.table))
+      return getLastNonTableLine(message.content.text)
 
     case 'attachments': {
       const attachmentLabels = message.content.attachments
