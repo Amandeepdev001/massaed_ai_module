@@ -74,6 +74,19 @@
   cursor: not-allowed;
 }
 
+.chat-textbox__icon-btn--listening {
+  background: var(--brown-100);
+  color: var(--ai-brand);
+  box-shadow: 0 0 0 2px var(--light-color);
+}
+
+.chat-textbox__speech-error {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.33;
+  color: var(--red-51);
+}
+
 .chat-textbox__send-btn {
   display: flex;
   align-items: center;
