@@ -17,8 +17,13 @@ export function MessageMarkdown({ content }: { content: string }) {
         }
 
         const keepIndices = block.headers
-          .map((_header, idx) => {
+          .map((header, idx) => {
             const columnValues = block.rows.map((row) => row[idx] || '')
+
+            if (isSerialColumn(header, columnValues)) {
+              return null
+            }
+
             const nonEmptyValues = columnValues.map((val) => val.trim()).filter(Boolean)
 
             if (nonEmptyValues.length > 0 && nonEmptyValues.every((val) => isDbId(val))) {
@@ -150,7 +155,48 @@ function renderInlineMarkdown(text: string) {
   })
 }
 
+function isSerialOrIndexHeader(header: string): boolean {
+  const normalized = header.toLowerCase().trim()
+  return /^(s\.?\s*no\.?|sr\.?\s*no\.?|sl\.?\s*no\.?|sno|srno|slno|serial\s*no\.?|serial\s*number|index|#|no\.?)$/i.test(normalized)
+}
 
+function isSerialColumn(header: string, bodyValues: string[]): boolean {
+  const normalizedHeader = header.toLowerCase().trim()
+
+  if (isSerialOrIndexHeader(normalizedHeader)) {
+    return true
+  }
+
+  const isHeaderNumOrEmpty = normalizedHeader === '' || /^\d+$/.test(normalizedHeader)
+  if (isHeaderNumOrEmpty && bodyValues.length > 0) {
+    const numbers = bodyValues.map((v) => parseInt(v.trim(), 10))
+    if (!numbers.some(isNaN)) {
+      let isSequential = true
+      for (let i = 1; i < numbers.length; i++) {
+        if (numbers[i] !== numbers[i - 1] + 1) {
+          isSequential = false
+          break
+        }
+      }
+
+      if (isSequential && /^\d+$/.test(normalizedHeader)) {
+        const headerNum = parseInt(normalizedHeader, 10)
+        if (numbers[0] !== headerNum + 1) {
+          isSequential = false
+        }
+      }
+
+      if (isSequential) {
+        if (numbers[0] >= 1900 && numbers[0] <= 2100) {
+          return false
+        }
+        return true
+      }
+    }
+  }
+
+  return false
+}
 
 function isDbId(val: string): boolean {
   const trimmed = val.trim()
