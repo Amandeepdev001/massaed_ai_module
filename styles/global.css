@@ -88,6 +88,38 @@ input {
   visibility: visible;
 }
 
+.table-scrollbar {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+.table-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  background: transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--pb-bg-en-1), var(--button-bg-2));
+  border: 2.4px solid var(--pb-bg-en-1);
+  border-radius: 8px;
+  visibility: hidden;
+}
+
+.table-scrollbar:hover::-webkit-scrollbar-thumb {
+  visibility: visible;
+}
+
+.table-scrollbar:hover::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  visibility: visible;
+}
+
 .text-12-400 {
   font-size: 0.75rem;
   font-weight: 400;

@@ -38,7 +38,7 @@ export function MessageMarkdown({ content }: { content: string }) {
         const filteredRows = block.rows.map((row) => keepIndices.map((idx) => row[idx]))
 
         return (
-          <div key={index} className={`${styles['message-markdown__table-wrap']} ${styles['table-scrollbar']}`}>
+          <div key={index} className={`${styles['message-markdown__table-wrap']} table-scrollbar`}>
             <table className={styles['message-markdown__table']}>
               <thead>
                 <tr>

@@ -63,28 +63,7 @@
   line-height: 1.45;
 }
 
-.table-scrollbar {
-  scrollbar-gutter: stable;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: var(--pb-bg-en-1) transparent;
-}
 
-.table-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-  background: transparent;
-}
-
-.table-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.table-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(var(--pb-bg-en-1), var(--button-bg-2));
-  border: none;
-  border-radius: 999px;
-}
 
 .message-markdown__chip-list {
   display: flex;
