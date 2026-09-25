@@ -10,7 +10,6 @@ interface ImportMetaEnv {
   readonly VITE_USER_ID?: string
   readonly VITE_SESSION_ID?: string
   readonly VITE_AGENCY_ID?: string
-  readonly VITE_PROXY_TARGET?: string
 }
 
 interface ImportMeta {

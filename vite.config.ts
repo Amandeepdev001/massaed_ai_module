@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       host: true,
       proxy: {
         '/api': {
-          target: env.VITE_PROXY_TARGET,
+          target: env.PROXY_TARGET,
           changeOrigin: true,
           // Force IPv4 — this network resolves Cloudflare AAAA records but
           // IPv6 connects time out, which Node surfaces as AggregateError ETIMEDOUT.
