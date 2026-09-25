@@ -25,6 +25,7 @@ export type AssistantEntityValue = {
 export type AssistantEventPayload = {
   message?: string
   stage?: string
+  /** Choice chips for follow_up_question (also accepted from backend as `candidates`). */
   values?: AssistantEntityValue[]
 }
 

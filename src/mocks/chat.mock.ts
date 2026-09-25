@@ -59,7 +59,6 @@ export const MOCK_CHAT_THREADS: Record<string, ChatMessage[]> = {
       type: 'text',
       timestamp: '04:40 PM',
       analyses: BOT_ANALYSES,
-      defaultAnalysesOpen: true,
       content: {
         text: `To create a board, start by choosing a board type (Sales, Rental, or Custom) and giving it a clear name that reflects its purpose.
 

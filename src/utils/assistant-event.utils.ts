@@ -5,6 +5,7 @@ import {
   TERMINAL_ASSISTANT_EVENT_TYPES,
 } from '@/constants/assistant-api.constants'
 import type {
+  AssistantEntityValue,
   AssistantEventPayload,
   AssistantEventType,
   AssistantHistoryMessage,
@@ -106,6 +107,43 @@ function synthesizeAssistantEventId(
   return [runId, eventType, createdAt, payload.stage ?? '', payload.message ?? ''].join('\0')
 }
 
+function normalizeEntityValues(input: unknown): AssistantEntityValue[] | undefined {
+  if (!Array.isArray(input)) return undefined
+
+  const values: AssistantEntityValue[] = []
+  for (const item of input) {
+    if (!item || typeof item !== 'object') continue
+    const row = item as Record<string, unknown>
+    const id = typeof row.id === 'string' ? row.id.trim() : ''
+    const labelFromLabel = typeof row.label === 'string' ? row.label.trim() : ''
+    const labelFromName = typeof row.name === 'string' ? row.name.trim() : ''
+    const label = labelFromLabel || labelFromName
+    if (!id || !label) continue
+
+    const type =
+      typeof row.type === 'string' && row.type.trim().length > 0 ? row.type.trim() : 'entity'
+    const confidence = typeof row.confidence === 'number' ? row.confidence : undefined
+    values.push(confidence === undefined ? { id, label, type } : { id, label, type, confidence })
+  }
+
+  return values.length > 0 ? values : undefined
+}
+
+function normalizeAssistantPayload(raw: unknown): AssistantEventPayload {
+  if (!raw || typeof raw !== 'object') return {}
+
+  const row = raw as Record<string, unknown>
+  const message = typeof row.message === 'string' ? row.message : undefined
+  const stage = typeof row.stage === 'string' ? row.stage : undefined
+  const values = normalizeEntityValues(row.values) ?? normalizeEntityValues(row.candidates)
+
+  return {
+    ...(message !== undefined ? { message } : {}),
+    ...(stage !== undefined ? { stage } : {}),
+    ...(values ? { values } : {}),
+  }
+}
+
 export function parseAssistantRunEvent(rawData: string): AssistantRunEvent | null {
   try {
     const data = JSON.parse(rawData) as {
@@ -113,7 +151,7 @@ export function parseAssistantRunEvent(rawData: string): AssistantRunEvent | nul
       runId: string
       sequence?: number
       eventType: AssistantEventType
-      payload?: AssistantEventPayload
+      payload?: unknown
       createdAt: string
     }
 
@@ -121,7 +159,7 @@ export function parseAssistantRunEvent(rawData: string): AssistantRunEvent | nul
       return null
     }
 
-    const payload = data.payload ?? {}
+    const payload = normalizeAssistantPayload(data.payload)
     const backendSequence =
       typeof data.sequence === 'number' && Number.isFinite(data.sequence) ? data.sequence : null
     const backendId =
@@ -384,15 +422,14 @@ export function hasRunSettled(events: AssistantRunEvent[]): boolean {
 
 export function findSettlingAssistantEvent(events: AssistantRunEvent[]): AssistantRunEvent | null {
   const sortedEvents = [...events].sort(compareAssistantEvents)
+  const settling = sortedEvents.filter((event) => shouldCloseAssistantStream(event.eventType))
+  if (settling.length === 0) return null
 
-  for (let index = sortedEvents.length - 1; index >= 0; index -= 1) {
-    const event = sortedEvents[index]
-    if (event && shouldCloseAssistantStream(event.eventType)) {
-      return event
-    }
-  }
-
-  return null
+  // Prefer the interactive/final pause over a trailing waiting_for_user (backends often emit both).
+  const preferred = [...settling]
+    .reverse()
+    .find((event) => event.eventType !== 'waiting_for_user')
+  return preferred ?? settling[settling.length - 1] ?? null
 }
 
 export function buildAnalysisSteps(events: AssistantRunEvent[]): AnalysisStepData[] {
@@ -417,9 +454,11 @@ export function buildHistoryEntriesFromRun(
   const newEntries: AssistantHistoryMessage[] = []
 
   userMessages.forEach((msg, index) => {
-    const createdAt = earliestEventTime
-      ? new Date(new Date(earliestEventTime).getTime() - 1000 + index).toISOString()
-      : (optimisticSentAtById[msg.id] ?? new Date().toISOString())
+    const createdAt =
+      optimisticSentAtById[msg.id] ??
+      (earliestEventTime
+        ? new Date(new Date(earliestEventTime).getTime() - 1000 + index).toISOString()
+        : new Date().toISOString())
 
     newEntries.push({
       id: msg.id,
@@ -476,9 +515,17 @@ export function buildLiveStreamMessage(events: AssistantRunEvent[]): BotChatMess
   const sortedEvents = [...events].sort(compareAssistantEvents)
   const runId = sortedEvents[0]?.runId ?? 'live'
 
-  const lastResponse = [...sortedEvents]
-    .reverse()
-    .find((event) => CONVERSATION_RESPONSE_EVENT_TYPES.has(event.eventType))
+  const lastResponse =
+    [...sortedEvents]
+      .reverse()
+      .find(
+        (event) =>
+          CONVERSATION_RESPONSE_EVENT_TYPES.has(event.eventType) &&
+          event.eventType !== 'waiting_for_user',
+      ) ??
+    [...sortedEvents]
+      .reverse()
+      .find((event) => CONVERSATION_RESPONSE_EVENT_TYPES.has(event.eventType))
 
   if (lastResponse) {
     const message = mapEventToBotMessage(lastResponse)
@@ -493,7 +540,7 @@ export function buildLiveStreamMessage(events: AssistantRunEvent[]): BotChatMess
     return withLiveAnalyses(
       botText(`assistant-live-${lastPartial.runId}`, text, timestamp),
       analyses,
-      true,
+      false,
     )
   }
 
@@ -501,7 +548,7 @@ export function buildLiveStreamMessage(events: AssistantRunEvent[]): BotChatMess
     const timestamp = formatAssistantTimestamp(
       sortedEvents[sortedEvents.length - 1]?.createdAt ?? new Date().toISOString(),
     )
-    return withLiveAnalyses({ ...createLiveTypingMessage(runId), timestamp }, analyses, true)
+    return withLiveAnalyses({ ...createLiveTypingMessage(runId), timestamp }, analyses, false)
   }
 
   return null
@@ -520,7 +567,7 @@ export function createLiveRunMessage(
 
   if (analyses.length > 0) {
     const timestamp = formatAssistantTimestamp(new Date().toISOString())
-    return withLiveAnalyses({ ...createLiveTypingMessage(runId), timestamp }, analyses, true)
+    return withLiveAnalyses({ ...createLiveTypingMessage(runId), timestamp }, analyses, false)
   }
 
   return createLiveTypingMessage(runId)

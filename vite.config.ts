@@ -28,9 +28,6 @@ export default defineConfig(({ mode }) => {
           timeout: 0,
           proxyTimeout: 0,
           configure: (proxy) => {
-            // Browser sends Origin: http://localhost:3010. The gateway CORS
-            // allowlist rejects it and Express turns that into an HTML 500.
-            // This proxy is same-origin to the app, so drop Origin upstream.
             proxy.on('proxyReq', (proxyReq) => {
               proxyReq.removeHeader('origin')
             })

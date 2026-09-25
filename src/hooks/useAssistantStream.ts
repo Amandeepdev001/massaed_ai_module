@@ -16,6 +16,8 @@ export function useAssistantStream(
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const afterSequenceRef = useRef(initialAfterSequence)
   const closedIntentionallyRef = useRef(false)
+  /** True once this SSE session has seen run_started (marks a real new turn). */
+  const seenRunStartedInSessionRef = useRef(false)
 
   const closeStream = useCallback(() => {
     closedIntentionallyRef.current = true
@@ -24,23 +26,39 @@ export function useAssistantStream(
     setIsStreaming(false)
   }, [])
 
+  const trackSequence = useCallback((event: AssistantRunEvent) => {
+    if (!event.hasBackendSequence) return
+    afterSequenceRef.current = event.sequence
+    setLastSequence(event.sequence)
+  }, [])
+
   const appendEvent = useCallback(
     (event: AssistantRunEvent) => {
+      // Backend often emits waiting_for_user right after follow_up_question. We close
+      // the stream on follow_up, so that waiting event is missed. On resume
+      // (afterSequence=follow_up.seq) it arrives BEFORE the next run_started and would
+      // falsely settle the new turn as "I need your input to continue."
+      if (event.eventType === 'waiting_for_user' && !seenRunStartedInSessionRef.current) {
+        trackSequence(event)
+        return
+      }
+
+      if (event.eventType === 'run_started') {
+        seenRunStartedInSessionRef.current = true
+      }
+
       setEvents((current) => {
         if (current.some((item) => item.id === event.id)) return current
         return [...current, event]
       })
 
-      if (event.hasBackendSequence) {
-        afterSequenceRef.current = event.sequence
-        setLastSequence(event.sequence)
-      }
+      trackSequence(event)
 
       if (shouldCloseAssistantStream(event.eventType)) {
         closeStream()
       }
     },
-    [closeStream],
+    [closeStream, trackSequence],
   )
 
   const openStream = useCallback(
@@ -49,6 +67,7 @@ export function useAssistantStream(
 
       unsubscribeRef.current?.()
       closedIntentionallyRef.current = false
+      seenRunStartedInSessionRef.current = false
       setIsStreaming(true)
       setError(null)
 
@@ -76,6 +95,7 @@ export function useAssistantStream(
       setEvents([])
       setLastSequence(initialAfterSequence)
       afterSequenceRef.current = initialAfterSequence
+      seenRunStartedInSessionRef.current = false
       return
     }
 

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 
 import type { BotChatMessage, ChatMessage, ChatMessageHandlers } from '@/types/chat.types'
 import { getChatMessageCopyText } from '@/utils/message-copy'
@@ -148,14 +148,9 @@ function BotMessage({ message, handlers }: { message: BotChatMessage; handlers?:
   const reactId = useId()
   const analysesContentId = `${reactId}-analyses`
   const analyses = message.analyses ?? []
-  const [isOpen, setIsOpen] = useState(message.defaultAnalysesOpen ?? false)
+  const [isOpen, setIsOpen] = useState(false)
   const hasAnalyses = analyses.length > 0
-  const isAnalysisOnly = message.type === 'typing' && hasAnalyses
-  const showBubble = !isAnalysisOnly
-
-  useEffect(() => {
-    if (message.defaultAnalysesOpen) setIsOpen(true)
-  }, [message.defaultAnalysesOpen, analyses.length])
+  const visibleSteps = isOpen ? analyses : analyses.slice(-1)
 
   const hasTable = message.type === 'text' && (message.content.text.includes('\n|') || message.content.text.includes('\n| '))
 
@@ -190,27 +185,21 @@ function BotMessage({ message, handlers }: { message: BotChatMessage; handlers?:
       </div>
 
       {hasAnalyses ? (
-        <div
-          id={analysesContentId}
-          className={`${styles['message-bot__analyses']} ${isOpen ? styles['is-open'] : ''}`}
-          aria-hidden={!isOpen}
-        >
-          <MessageAnalysisSteps steps={analyses} />
+        <div id={analysesContentId} className={styles['message-bot__analyses']}>
+          <MessageAnalysisSteps steps={visibleSteps} />
         </div>
       ) : null}
 
-      {showBubble ? (
-        <div className={`${styles['message-bot__body']} ${hasTable ? styles['message-bot__body--has-table'] : ''}`}>
-          <BotMessageBody message={message} handlers={handlers} />
-          {message.type !== 'typing' ? (
-            <MessageMetaRow
-              timestamp={message.timestamp}
-              variant="bot"
-              copyText={getChatMessageCopyText(message)}
-            />
-          ) : null}
-        </div>
-      ) : null}
+      <div className={`${styles['message-bot__body']} ${hasTable ? styles['message-bot__body--has-table'] : ''}`}>
+        <BotMessageBody message={message} handlers={handlers} />
+        {message.type !== 'typing' ? (
+          <MessageMetaRow
+            timestamp={message.timestamp}
+            variant="bot"
+            copyText={getChatMessageCopyText(message)}
+          />
+        ) : null}
+      </div>
     </article>
   )
 }

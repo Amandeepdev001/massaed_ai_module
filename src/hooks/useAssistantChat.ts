@@ -32,7 +32,9 @@ function appendUniqueHistoryEntries(
   const existingIds = new Set((old ?? []).map((entry) => entry.id))
   const uniqueEntries = newEntries.filter((entry) => !existingIds.has(entry.id))
   if (uniqueEntries.length === 0) return old ?? []
-  return [...(old ?? []), ...uniqueEntries]
+  return [...(old ?? []), ...uniqueEntries].sort(
+    (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
+  )
 }
 
 function extractErrorMessage(error: unknown): string {
@@ -84,6 +86,8 @@ export function useAssistantChat({
   const activeRunEventsRef = useRef<AssistantRunEvent[]>([])
   const pendingOptimisticUsersRef = useRef<UserChatMessage[]>([])
   const optimisticSentAtRef = useRef<Record<string, string>>({})
+  /** When backend continues the same runId after a pause, resume SSE after this sequence. */
+  const lastSequenceByRunIdRef = useRef<Record<string, number>>({})
 
   const isLive = !isNewConversation
 
@@ -110,17 +114,6 @@ export function useAssistantChat({
     return history ?? []
   }, [isNewConversation, history])
 
-  const conversationMessages = useMemo(() => {
-    const filteredHistory =
-      isLive && activeRunId
-        ? sessionHistory.filter(
-            (item) => !(item.senderType !== 'user' && item.runId === activeRunId),
-          )
-        : sessionHistory
-
-    return assistantHistoryToMessages(filteredHistory)
-  }, [isLive, activeRunId, sessionHistory])
-
   const pendingOptimisticUsers = useMemo(() => {
     if (!isLive) return []
 
@@ -135,8 +128,40 @@ export function useAssistantChat({
       .sort(compareAssistantEvents)
   }, [activeRunId, seenEvents])
 
+  const liveEventIds = useMemo(
+    () => new Set(activeRunEvents.map((event) => event.id)),
+    [activeRunEvents],
+  )
+
+  const conversationMessages = useMemo(() => {
+    const filteredHistory =
+      isLive && activeRunId
+        ? sessionHistory.filter((item) => {
+            // Keep prior turns on the same runId. Only hide assistant rows that are
+            // currently being represented by the live stream (same event id).
+            if (item.senderType === 'user' || item.runId !== activeRunId) return true
+            return !liveEventIds.has(item.id)
+          })
+        : sessionHistory
+
+    return assistantHistoryToMessages(filteredHistory)
+  }, [isLive, activeRunId, sessionHistory, liveEventIds])
+
   activeRunEventsRef.current = activeRunEvents
   pendingOptimisticUsersRef.current = pendingOptimisticUsers
+
+  useEffect(() => {
+    if (!activeRunId) return
+    let maxSequence = lastSequenceByRunIdRef.current[activeRunId] ?? 0
+    for (const event of activeRunEvents) {
+      if (event.hasBackendSequence && event.sequence > maxSequence) {
+        maxSequence = event.sequence
+      }
+    }
+    if (maxSequence > 0) {
+      lastSequenceByRunIdRef.current[activeRunId] = maxSequence
+    }
+  }, [activeRunId, activeRunEvents])
 
   const isRunSettled = hasRunSettled(activeRunEvents)
 
@@ -233,19 +258,10 @@ export function useAssistantChat({
 
   useEffect(() => {
     if (!activeRunId || !isRunSettled || stream.isStreaming) return
-
-    dispatch(
-      assistantApi.util.updateQueryData('getActiveAssistantRun', undefined, (draft) => {
-        draft.success = true
-        draft.data = null
-      }),
-    )
-  }, [activeRunId, isRunSettled, stream.isStreaming, dispatch])
-
-  useEffect(() => {
-    if (!isNewConversation) return
+    // Commit as soon as the run pauses/ends so the live list matches post-reload order
+    // (history + interleaved bot replies), instead of stacking users above one live bubble.
     persistSettledRunIfNeeded()
-  }, [isNewConversation, persistSettledRunIfNeeded])
+  }, [activeRunId, isRunSettled, stream.isStreaming, persistSettledRunIfNeeded])
 
   useEffect(() => {
     if (!stream.error || !activeRunId) return
@@ -272,14 +288,18 @@ export function useAssistantChat({
       optimisticSentAtRef.current[optimistic.id] = new Date().toISOString()
       setOptimisticUsers((current) => [...current, optimistic])
       setSeenEvents({})
-      setInitialSequence(0)
       setActiveRunId(null)
       attachedRunIdRef.current = null
 
       try {
         const response = await startAssistantRun({ message: trimmed }).unwrap()
-        attachedRunIdRef.current = response.data.runId
-        setActiveRunId(response.data.runId)
+        const runId = response.data.runId
+        // Same runId resume (waiting_user → continue): skip already-seen events so
+        // old follow_up/waiting pauses don't immediately re-settle the stream.
+        const resumeFrom = lastSequenceByRunIdRef.current[runId] ?? 0
+        attachedRunIdRef.current = runId
+        setInitialSequence(resumeFrom)
+        setActiveRunId(runId)
       } catch (error) {
         setOptimisticUsers((current) => current.filter((message) => message.id !== optimistic.id))
         delete optimisticSentAtRef.current[optimistic.id]
@@ -299,22 +319,19 @@ export function useAssistantChat({
 
   const canRespondToInteractiveMessage = useCallback(
     (messageId: string) => {
-      if (isSending || answeredInteractiveMessageIds[messageId]) return false
+      if (isSending || isRunInProgress || answeredInteractiveMessageIds[messageId]) return false
 
-      if (activeRunId) {
-        return isRunSettled && liveMessage?.id === messageId
+      // After settle we persist into history and clear the live run — allow the
+      // latest unanswered interactive message in the transcript.
+      const message = messages.find((item) => item.id === messageId)
+      if (!message || message.role !== 'bot') return false
+      if (message.type !== 'selectors' && message.type !== 'status' && message.type !== 'summary') {
+        return false
       }
 
-      return !isRunInProgress
+      return true
     },
-    [
-      activeRunId,
-      answeredInteractiveMessageIds,
-      isRunInProgress,
-      isRunSettled,
-      isSending,
-      liveMessage?.id,
-    ],
+    [answeredInteractiveMessageIds, isRunInProgress, isSending, messages],
   )
 
   const markInteractiveMessageAnswered = useCallback((messageId: string) => {
