@@ -3,8 +3,15 @@ function optionalEnv(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined
 }
 
+/** Same-origin /api only — Vite + Vercel proxy to the backend (avoids browser CORS). */
+function resolveApiBaseUrl(value: string | undefined): string {
+  const trimmed = value?.trim()
+  if (!trimmed || /^https?:\/\//i.test(trimmed)) return '/api'
+  return trimmed.replace(/\/$/, '') || '/api'
+}
+
 export const apiConfig = {
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? '/api',
+  baseUrl: resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL),
   userId: import.meta.env.VITE_USER_ID ?? '123456',
   sessionId: optionalEnv(import.meta.env.VITE_SESSION_ID),
   agencyId: optionalEnv(import.meta.env.VITE_AGENCY_ID),
