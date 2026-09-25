@@ -97,4 +97,5 @@ export type ChatMessageHandlers = {
   onActionSelect?: (messageId: string, actionId: string) => void
   onCopy?: (messageId: string) => void
   onEdit?: (messageId: string) => void
+  isInteractiveAnswered?: (messageId: string) => boolean
 }

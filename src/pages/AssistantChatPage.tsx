@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import { ChatNavigationPanel } from '@/components/ChatNavigationPanel/ChatNavigationPanel'
 import { ChatTextbox } from '@/components/ChatTextbox/ChatTextbox'
@@ -9,19 +9,14 @@ import { useChatSession } from '@/hooks/useChatSession'
 import { ChatLayout } from '@/layout/ChatLayout'
 import { WorkspaceLayout } from '@/layout/WorkspaceLayout'
 import { CHAT_TEXTBOX_PLACEHOLDER, MOCK_CHAT_SUGGESTIONS } from '@/mocks/chat.mock'
-import { useGetChatHistoryQuery } from '@/store/api/chatApi'
+import { useGetAssistantHistoryQuery } from '@/store/api/assistantApi'
 import type { ChatSuggestion } from '@/types/chat-suggestions.types'
-import {
-  conversationToChatMessages,
-  conversationsResponseToChatMessages,
-} from '@/utils/conversation-to-messages'
 
 const WELCOME_NAME = 'Aman Vashisht'
 
 export function AssistantChatPage() {
-  const { data, isLoading, isFetching } = useGetChatHistoryQuery()
-
-  const conversations = data?.success ? data.conversations : []
+  const historyQuery = useGetAssistantHistoryQuery()
+  const history = historyQuery.data?.success ? historyQuery.data.data : undefined
 
   const {
     sessions,
@@ -30,21 +25,14 @@ export function AssistantChatPage() {
     handleSelectedChatChange,
     startNewConversation,
     returnToLiveConversation,
-  } = useChatSession(conversations)
+  } = useChatSession(history)
 
-  const historyMessages = useMemo(() => {
-    if (isNewConversation) return []
-    if (!data?.success) return []
-
-    const conversation = data.conversations.find((item) => item.conversationId === selectedChatId)
-    if (conversation) return conversationToChatMessages(conversation)
-
-    return conversationsResponseToChatMessages(data.conversations)
-  }, [data, isNewConversation, selectedChatId])
-
-  const { messages, isInputDisabled, isRunInProgress, sendMessage, handlers } = useAssistantChat({
-    historyMessages,
-  })
+  const { messages, isHistoryLoading, isInputDisabled, isRunInProgress, sendMessage, handlers } =
+    useAssistantChat({
+      isNewConversation,
+      history,
+      isHistoryLoading: historyQuery.isLoading,
+    })
 
   const chatTextboxRef = useRef<HTMLTextAreaElement>(null)
   const wasRunInProgressRef = useRef(false)
@@ -55,7 +43,7 @@ export function AssistantChatPage() {
   }, [isInputDisabled])
 
   useEffect(() => {
-    if (isLoading) return
+    if (isHistoryLoading) return
 
     const frame = requestAnimationFrame(() => focusInput())
     const timeout = window.setTimeout(() => focusInput(), 120)
@@ -64,7 +52,7 @@ export function AssistantChatPage() {
       cancelAnimationFrame(frame)
       window.clearTimeout(timeout)
     }
-  }, [isLoading, selectedChatId, isNewConversation, focusInput])
+  }, [isHistoryLoading, selectedChatId, isNewConversation, focusInput])
 
   useEffect(() => {
     const wasInProgress = wasRunInProgressRef.current
@@ -95,7 +83,7 @@ export function AssistantChatPage() {
     [handleSend],
   )
 
-  if (isLoading || isFetching) {
+  if (isHistoryLoading && !isNewConversation) {
     return <MassaedLoader />
   }
 
