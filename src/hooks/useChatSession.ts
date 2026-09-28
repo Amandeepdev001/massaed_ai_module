@@ -1,15 +1,23 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
-import { NEW_CONVERSATION_ID } from '@/constants/chat.constants'
-import type { AssistantHistoryMessage } from '@/types/assistant.api.types'
-import { buildChatSessionsFromHistory } from '@/utils/chat-session.utils'
+import { NEW_CONVERSATION_ID, THREAD_SESSION_ID } from '@/constants/chat.constants'
+import type { ChatSessionItem } from '@/types/chat-navigation.types'
 
-export function useChatSession(history: AssistantHistoryMessage[] | undefined) {
-  const sessions = useMemo(() => buildChatSessionsFromHistory(history ?? []), [history])
+const LIVE_SESSION: ChatSessionItem = {
+  id: THREAD_SESSION_ID,
+  title: 'Chat',
+  groupLabel: 'Recent',
+}
 
+/**
+ * Session sidebar without server history — a single live thread for the
+ * current browser visit. Leaving / refreshing clears the transcript.
+ */
+export function useChatSession() {
   const [isNewConversation, setIsNewConversation] = useState(false)
 
-  const threadSessionId = sessions[0]?.id
+  const sessions = isNewConversation ? [] : [LIVE_SESSION]
+  const threadSessionId = LIVE_SESSION.id
 
   const handleSelectedChatChange = useCallback(
     (chatId: string | undefined) => {

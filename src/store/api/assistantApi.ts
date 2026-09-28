@@ -4,7 +4,8 @@ import { apiConfig, buildAssistantHeaders } from '@/config/api.config'
 import { ASSISTANT_ENDPOINTS } from '@/constants/assistant-api.constants'
 import type {
   AssistantActiveRunResponse,
-  AssistantHistoryResponse,
+  OpenAssistantSessionRequest,
+  OpenAssistantSessionResponse,
   SendMessageRequest,
   StartAssistantRunResponse,
 } from '@/types/assistant.api.types'
@@ -21,13 +22,19 @@ export const assistantApi = createApi({
       return headers
     },
   }),
-  tagTypes: ['AssistantHistory', 'AssistantActiveRun'],
+  tagTypes: ['AssistantActiveRun'],
   endpoints: (builder) => ({
-    getAssistantHistory: builder.query<AssistantHistoryResponse, void>({
-      query: () => ({
-        url: ASSISTANT_ENDPOINTS.history,
+    /** Opens session; purge only on refresh / reopen (keeps AI context otherwise). */
+    openAssistantSession: builder.mutation<
+      OpenAssistantSessionResponse,
+      OpenAssistantSessionRequest | void
+    >({
+      query: (arg) => ({
+        url: ASSISTANT_ENDPOINTS.sessionOpen,
+        method: 'POST',
+        body: { purge: arg?.purge === true },
       }),
-      providesTags: ['AssistantHistory'],
+      invalidatesTags: ['AssistantActiveRun'],
     }),
     getActiveAssistantRun: builder.query<AssistantActiveRunResponse, void>({
       query: () => ({
@@ -54,7 +61,7 @@ export const assistantApi = createApi({
 })
 
 export const {
-  useGetAssistantHistoryQuery,
+  useOpenAssistantSessionMutation,
   useGetActiveAssistantRunQuery,
   useStartAssistantRunMutation,
 } = assistantApi

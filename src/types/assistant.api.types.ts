@@ -90,6 +90,18 @@ export type AssistantHistoryMessage = {
 
 export type AssistantHistoryResponse = AssistantApiEnvelope<AssistantHistoryMessage[]>
 
+export type OpenAssistantSessionData = {
+  activeRun: AssistantActiveRunData | null
+  activeRunUserMessages: AssistantHistoryMessage[]
+}
+
+export type OpenAssistantSessionRequest = {
+  /** true = browser refresh or chat screen reopened; false = stay on chat (keep AI context). */
+  purge?: boolean
+}
+
+export type OpenAssistantSessionResponse = AssistantApiEnvelope<OpenAssistantSessionData>
+
 export type AssistantStreamState = {
   events: AssistantRunEvent[]
   isStreaming: boolean
@@ -101,6 +113,4 @@ export type AssistantStreamState = {
 
 export type UseAssistantChatOptions = {
   isNewConversation: boolean
-  history: AssistantHistoryMessage[] | undefined
-  isHistoryLoading: boolean
 }

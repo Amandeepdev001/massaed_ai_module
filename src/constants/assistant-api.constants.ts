@@ -54,12 +54,12 @@ export const CONVERSATION_RESPONSE_EVENT_TYPES: ReadonlySet<AssistantEventType> 
 ])
 
 /**
- * REST paths relative to `VITE_API_BASE_URL` (e.g. `/api` + `/v1/user/assistant/history`).
- * Gateway prefix: /api/v1/user
+ * REST paths relative to `VITE_API_BASE_URL` (e.g. `/api` + `/v1/user/assistant/...`).
+ * Gateway prefix: /api/v1/user → user-service `/assistant`.
  */
 export const ASSISTANT_ENDPOINTS = {
   messages: '/v1/user/assistant/messages',
-  history: '/v1/user/assistant/history',
+  sessionOpen: '/v1/user/assistant/session/open',
   activeRun: '/v1/user/assistant/runs/active',
   runEvents: (runId: string, afterSequence: number) =>
     `/v1/user/assistant/runs/${runId}/events?afterSequence=${afterSequence}`,

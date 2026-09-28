@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux'
 
 import {
   assistantApi,
-  useGetActiveAssistantRunQuery,
+  useOpenAssistantSessionMutation,
   useStartAssistantRunMutation,
 } from '@/store/api/assistantApi'
 import type { AppDispatch } from '@/store'
@@ -23,16 +23,24 @@ import {
   hasRunSettled,
 } from '@/utils/assistant-event.utils'
 
+import {
+  clearAssistantTranscript,
+  loadAssistantTranscript,
+  markAssistantChatMounted,
+  saveAssistantTranscript,
+  shouldPurgeAssistantHistory,
+} from '@/utils/assistant-session.utils'
+
 import { useAssistantStream } from './useAssistantStream'
 
 function appendUniqueHistoryEntries(
-  old: AssistantHistoryMessage[] | undefined,
+  old: AssistantHistoryMessage[],
   newEntries: AssistantHistoryMessage[],
 ): AssistantHistoryMessage[] {
-  const existingIds = new Set((old ?? []).map((entry) => entry.id))
+  const existingIds = new Set(old.map((entry) => entry.id))
   const uniqueEntries = newEntries.filter((entry) => !existingIds.has(entry.id))
-  if (uniqueEntries.length === 0) return old ?? []
-  return [...(old ?? []), ...uniqueEntries].sort(
+  if (uniqueEntries.length === 0) return old
+  return [...old, ...uniqueEntries].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   )
 }
@@ -59,17 +67,18 @@ function extractErrorMessage(error: unknown): string {
   return 'Unable to reach the server. Please try again.'
 }
 
-export function useAssistantChat({
-  isNewConversation,
-  history,
-  isHistoryLoading,
-}: UseAssistantChatOptions) {
+const ACTIVE_RUN_STATUSES = new Set(['running', 'queued', 'waiting_user'])
+
+export function useAssistantChat({ isNewConversation }: UseAssistantChatOptions) {
   const dispatch = useDispatch<AppDispatch>()
 
-  const { data: activeRunResponse, isLoading: isActiveRunLoading } = useGetActiveAssistantRunQuery()
-  const activeRun = activeRunResponse?.success ? activeRunResponse.data : null
-
+  const [openAssistantSession, { isLoading: isSessionOpening }] =
+    useOpenAssistantSessionMutation()
   const [startAssistantRun, { isLoading: isSending }] = useStartAssistantRunMutation()
+
+  /** In-memory transcript for this browser session only — never loaded from a history API. */
+  const [sessionHistory, setSessionHistory] = useState<AssistantHistoryMessage[]>([])
+  const [sessionReady, setSessionReady] = useState(false)
 
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [initialSequence, setInitialSequence] = useState(0)
@@ -88,10 +97,58 @@ export function useAssistantChat({
   const optimisticSentAtRef = useRef<Record<string, string>>({})
   /** When backend continues the same runId after a pause, resume SSE after this sequence. */
   const lastSequenceByRunIdRef = useRef<Record<string, number>>({})
+  const sessionOpenedRef = useRef(false)
 
   const isLive = !isNewConversation
 
   activeRunIdRef.current = activeRunId
+
+  useEffect(() => {
+    if (sessionOpenedRef.current) return
+    sessionOpenedRef.current = true
+
+    const purge = shouldPurgeAssistantHistory()
+    markAssistantChatMounted()
+
+    void (async () => {
+      try {
+        if (purge) {
+          clearAssistantTranscript()
+        } else {
+          // Same tab / still on chat — restore UI transcript; keep DB for AI context.
+          setSessionHistory(loadAssistantTranscript<AssistantHistoryMessage>())
+        }
+
+        const response = await openAssistantSession({ purge }).unwrap()
+        const data = response.success ? response.data : null
+        const activeRun = data?.activeRun ?? null
+        const userMessages = data?.activeRunUserMessages ?? []
+
+        if (purge) {
+          // After purge, only seed user rows for an incomplete run.
+          setSessionHistory(userMessages)
+        } else if (userMessages.length > 0) {
+          setSessionHistory((current) => appendUniqueHistoryEntries(current, userMessages))
+        }
+
+        if (activeRun && ACTIVE_RUN_STATUSES.has(activeRun.status)) {
+          // Cold attach: replay durable events from sequence 0.
+          attachedRunIdRef.current = activeRun.id
+          setInitialSequence(0)
+          setActiveRunId(activeRun.id)
+        }
+      } catch {
+        setSendError('Unable to open the chat session. Please refresh and try again.')
+      } finally {
+        setSessionReady(true)
+      }
+    })()
+  }, [openAssistantSession])
+
+  useEffect(() => {
+    if (!sessionReady) return
+    saveAssistantTranscript(sessionHistory)
+  }, [sessionHistory, sessionReady])
 
   useEffect(() => {
     if (stream.events.length === 0) return
@@ -109,17 +166,17 @@ export function useAssistantChat({
     })
   }, [stream.events])
 
-  const sessionHistory = useMemo(() => {
+  const visibleSessionHistory = useMemo(() => {
     if (isNewConversation) return []
-    return history ?? []
-  }, [isNewConversation, history])
+    return sessionHistory
+  }, [isNewConversation, sessionHistory])
 
   const pendingOptimisticUsers = useMemo(() => {
     if (!isLive) return []
 
-    const historyIds = new Set(sessionHistory.map((item) => item.id))
+    const historyIds = new Set(visibleSessionHistory.map((item) => item.id))
     return optimisticUsers.filter((message) => !historyIds.has(message.id))
-  }, [isLive, optimisticUsers, sessionHistory])
+  }, [isLive, optimisticUsers, visibleSessionHistory])
 
   const activeRunEvents = useMemo(() => {
     if (!activeRunId) return []
@@ -136,16 +193,14 @@ export function useAssistantChat({
   const conversationMessages = useMemo(() => {
     const filteredHistory =
       isLive && activeRunId
-        ? sessionHistory.filter((item) => {
-            // Keep prior turns on the same runId. Only hide assistant rows that are
-            // currently being represented by the live stream (same event id).
+        ? visibleSessionHistory.filter((item) => {
             if (item.senderType === 'user' || item.runId !== activeRunId) return true
             return !liveEventIds.has(item.id)
           })
-        : sessionHistory
+        : visibleSessionHistory
 
     return assistantHistoryToMessages(filteredHistory)
-  }, [isLive, activeRunId, sessionHistory, liveEventIds])
+  }, [isLive, activeRunId, visibleSessionHistory, liveEventIds])
 
   activeRunEventsRef.current = activeRunEvents
   pendingOptimisticUsersRef.current = pendingOptimisticUsers
@@ -158,10 +213,14 @@ export function useAssistantChat({
         maxSequence = event.sequence
       }
     }
+    // Include sequences from skipped waiting_for_user (tracked on the stream).
+    if (stream.lastSequence > maxSequence) {
+      maxSequence = stream.lastSequence
+    }
     if (maxSequence > 0) {
       lastSequenceByRunIdRef.current[activeRunId] = maxSequence
     }
-  }, [activeRunId, activeRunEvents])
+  }, [activeRunId, activeRunEvents, stream.lastSequence])
 
   const isRunSettled = hasRunSettled(activeRunEvents)
 
@@ -191,7 +250,7 @@ export function useAssistantChat({
     return merged
   }, [isNewConversation, conversationMessages, pendingOptimisticUsers, liveMessage])
 
-  const commitRunToHistory = useCallback(
+  const commitRunToSession = useCallback(
     (runId: string, events: AssistantRunEvent[], userMessages: UserChatMessage[]) => {
       const newEntries = buildHistoryEntriesFromRun(
         runId,
@@ -202,16 +261,7 @@ export function useAssistantChat({
 
       if (newEntries.length === 0) return
 
-      dispatch(
-        assistantApi.util.updateQueryData('getAssistantHistory', undefined, (draft) => {
-          if (!draft.success) {
-            draft.success = true
-            draft.message = draft.message || 'Assistant history fetched successfully.'
-            draft.data = []
-          }
-          draft.data = appendUniqueHistoryEntries(draft.data, newEntries)
-        }),
-      )
+      setSessionHistory((current) => appendUniqueHistoryEntries(current, newEntries))
       dispatch(
         assistantApi.util.updateQueryData('getActiveAssistantRun', undefined, (draft) => {
           draft.success = true
@@ -235,31 +285,13 @@ export function useAssistantChat({
     const events = activeRunEventsRef.current
     if (!hasRunSettled(events)) return false
 
-    commitRunToHistory(runId, events, pendingOptimisticUsersRef.current)
+    commitRunToSession(runId, events, pendingOptimisticUsersRef.current)
     clearRunState()
     return true
-  }, [clearRunState, commitRunToHistory])
-
-  const activeRunId_ = activeRun?.id
-  const activeRunStatus = activeRun?.status
-
-  useEffect(() => {
-    if (!isLive) return
-    if (activeRunStatus !== 'running' && activeRunStatus !== 'queued') return
-    if (!activeRunId_) return
-    if (attachedRunIdRef.current === activeRunId_) return
-
-    // Cold attach has no local events — replay from the start. Using lastSequence
-    // would skip everything already emitted and leave the UI on an empty typing state.
-    attachedRunIdRef.current = activeRunId_
-    setInitialSequence(0)
-    setActiveRunId(activeRunId_)
-  }, [activeRunId_, activeRunStatus, isLive])
+  }, [clearRunState, commitRunToSession])
 
   useEffect(() => {
     if (!activeRunId || !isRunSettled || stream.isStreaming) return
-    // Commit as soon as the run pauses/ends so the live list matches post-reload order
-    // (history + interleaved bot replies), instead of stacking users above one live bubble.
     persistSettledRunIfNeeded()
   }, [activeRunId, isRunSettled, stream.isStreaming, persistSettledRunIfNeeded])
 
@@ -321,8 +353,6 @@ export function useAssistantChat({
     (messageId: string) => {
       if (isSending || isRunInProgress || answeredInteractiveMessageIds[messageId]) return false
 
-      // After settle we persist into history and clear the live run — allow the
-      // latest unanswered interactive message in the transcript.
       const message = messages.find((item) => item.id === messageId)
       if (!message || message.role !== 'bot') return false
       if (message.type !== 'selectors' && message.type !== 'status' && message.type !== 'summary') {
@@ -393,7 +423,7 @@ export function useAssistantChat({
     [answeredInteractiveMessageIds],
   )
 
-  const isBootstrapping = isHistoryLoading || isActiveRunLoading
+  const isBootstrapping = !sessionReady || isSessionOpening
   const isInputDisabled = isBootstrapping || isSending || isRunInProgress
 
   const handlers: ChatMessageHandlers = {

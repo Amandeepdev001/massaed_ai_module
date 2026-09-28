@@ -392,9 +392,9 @@ function analysisStepDefaults(eventType: AssistantEventType): {
     case 'analyzing':
       return { title: 'Analyzing', description: 'Analyzing request…' }
     case 'tool_start':
-      return { title: 'Running action', description: 'Running an action…' }
+      return { title: 'Running', description: 'Running an action…' }
     case 'tool_result':
-      return { title: 'Action complete', description: 'Finished an action.' }
+      return { title: 'Running', description: 'Finished an action.' }
     case 'tool_error':
       return { title: 'Action failed', description: 'An action could not be completed.' }
     case 'run_completed':
@@ -404,8 +404,68 @@ function analysisStepDefaults(eventType: AssistantEventType): {
     case 'run_cancelled':
       return { title: 'Cancelled', description: 'The request was cancelled.' }
     default:
-      return { title: 'Step', description: '' }
+      return { title: 'Working', description: '' }
   }
+}
+
+/**
+ * Ordered progress phases for a single forward flow.
+ * tool_result shares "Running" with tool_start so we never flash Completed → Preparing response.
+ */
+type AnalysisPhase = {
+  key: string
+  order: number
+  title: string
+}
+
+const ANALYSIS_STAGE_PHASES: Record<string, AnalysisPhase> = {
+  intent_classified: { key: 'thinking', order: 20, title: 'Thinking' },
+  plan_created: { key: 'planning', order: 30, title: 'Planning' },
+  argument_generation: { key: 'preparing', order: 40, title: 'Preparing' },
+  tool_call_started: { key: 'running', order: 50, title: 'Running' },
+  tool_call_completed: { key: 'running', order: 50, title: 'Running' },
+  response_formatting: { key: 'preparing_response', order: 60, title: 'Preparing response' },
+  final_response_validation: { key: 'preparing_response', order: 60, title: 'Preparing response' },
+  graph_execution: { key: 'working', order: 15, title: 'Working' },
+  missing_input_resolved_from_context: { key: 'preparing', order: 40, title: 'Preparing' },
+  missing_input_resolved: { key: 'preparing', order: 40, title: 'Preparing' },
+  confirmation_resume_check: { key: 'checking', order: 35, title: 'Checking' },
+  confirmation_confirmed: { key: 'preparing', order: 40, title: 'Preparing' },
+  confirmation_cancelled: { key: 'cancelled', order: 90, title: 'Cancelled' },
+  confirmation_needs_input: { key: 'needs_input', order: 70, title: 'Needs input' },
+  resume_detected: { key: 'resuming', order: 15, title: 'Resuming' },
+  resume_needs_clarification: { key: 'needs_input', order: 70, title: 'Needs clarification' },
+  graph_timeout: { key: 'failed', order: 90, title: 'Timed out' },
+}
+
+const ANALYSIS_EVENT_PHASES: Partial<Record<AssistantEventType, AnalysisPhase>> = {
+  run_started: { key: 'started', order: 10, title: 'Getting started' },
+  thinking: { key: 'thinking', order: 20, title: 'Thinking' },
+  analyzing: { key: 'analyzing', order: 30, title: 'Analyzing' },
+  tool_start: { key: 'running', order: 50, title: 'Running' },
+  tool_result: { key: 'running', order: 50, title: 'Running' },
+  tool_error: { key: 'failed', order: 90, title: 'Action failed' },
+}
+
+function resolveAnalysisPhase(event: AssistantRunEvent): AnalysisPhase {
+  const stage = event.payload.stage?.trim()
+  if (stage && ANALYSIS_STAGE_PHASES[stage]) {
+    return ANALYSIS_STAGE_PHASES[stage]
+  }
+
+  const byType = ANALYSIS_EVENT_PHASES[event.eventType]
+  if (byType) return byType
+
+  if (stage) {
+    const title = stage
+      .split(/[_-]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ')
+    return { key: stage, order: 45, title: title || 'Working' }
+  }
+
+  return { key: 'working', order: 45, title: 'Working' }
 }
 
 function hasRunPausedForUser(events: AssistantRunEvent[]): boolean {
@@ -432,15 +492,60 @@ export function findSettlingAssistantEvent(events: AssistantRunEvent[]): Assista
   return preferred ?? settling[settling.length - 1] ?? null
 }
 
+/**
+ * Build a single forward progress flow (one step per phase).
+ * Later phases replace earlier noise; tool start/result stay under "Running".
+ * When the bot asks a follow-up, show "Waiting for your response" instead of
+ * "Preparing response".
+ */
 export function buildAnalysisSteps(events: AssistantRunEvent[]): AnalysisStepData[] {
-  return optimizeAnalysisEvents(events).map((event) => {
+  const optimized = optimizeAnalysisEvents(events)
+  const phaseLatest = new Map<
+    string,
+    { phase: AnalysisPhase; event: AssistantRunEvent; description: string }
+  >()
+
+  for (const event of optimized) {
+    const phase = resolveAnalysisPhase(event)
     const defaults = analysisStepDefaults(event.eventType)
-    return {
+    const description = event.payload.message?.trim() || defaults.description
+    phaseLatest.set(phase.key, { phase, event, description })
+  }
+
+  let steps = [...phaseLatest.values()]
+    .sort((left, right) => {
+      if (left.phase.order !== right.phase.order) return left.phase.order - right.phase.order
+      return compareAssistantEvents(left.event, right.event)
+    })
+    .map(({ phase, event, description }) => ({
       id: event.id,
-      title: event.payload.stage?.trim() || defaults.title,
-      description: event.payload.message?.trim() || defaults.description,
-    }
-  })
+      title: phase.title,
+      description,
+    }))
+
+  const settling = findSettlingAssistantEvent(events)
+  const waitingForUser =
+    settling?.eventType === 'follow_up_question' ||
+    settling?.eventType === 'confirmation_required' ||
+    settling?.eventType === 'waiting_for_user'
+
+  if (settling && waitingForUser) {
+    steps = steps.filter((step) => step.title !== 'Preparing response')
+
+    const title =
+      settling.eventType === 'confirmation_required'
+        ? 'Waiting for confirmation'
+        : 'Waiting for your response'
+
+    steps.push({
+      id: settling.id,
+      title,
+      description:
+        settling.payload.message?.trim() || 'I need your input to continue.',
+    })
+  }
+
+  return steps
 }
 
 export function buildHistoryEntriesFromRun(
